@@ -1,0 +1,17 @@
+button {
+    width: 80%;
+    padding: 10px;
+    height: 3.5em;
+    border-radius: 0.4em;
+    font-size: 20px;
+    border-bottom-color:#7d7d7d;
+    border-right: #7d7d7d;
+    color: #000;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+button:active {
+    background: linear-gradient(to bottom, #7d7d7d, #bfbfbf);
+}
+

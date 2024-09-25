@@ -1,0 +1,25 @@
+{
+  "name": "scada_client",
+  "version": "1.0.0",
+  "main": "dist/src/main/main.js",
+  "type": "module",
+  "scripts": {
+    "test": "",
+    "start": "tsc && electron dist/src/main/main.js",
+    "build": "tsc"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@types/electron": "1.4.38",
+    "@types/express": "^4.17.21",
+    "@types/node": "22.5.0",
+    "electron": "32.0.1",
+    "typescript": "5.5.4"
+  },
+  "dependencies": {
+    "express": "4.21.0"
+  }
+}
