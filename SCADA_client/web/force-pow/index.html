@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <object type="image/svg+xml" data="force-symbol.svg" id="the-svg"></object>
+    <script>
+        window.addEventListener("load", () => {
+            const svgDoc = document.getElementById("the-svg").contentDocument
+            console.log(svgDoc)
+            const svgItem = svgDoc.getElementById("red-circle-with-f")
+            console.log(svgItem)
+            const tagUse = document.createElementNS("http://www.w3.org/2000/svg", "use")
+            tagUse.setAttribute("href", "/force-pow/force-symbol.svg#yellow-circle-with-f")
+            tagUse.setAttribute("x", "70")
+            tagUse.setAttribute("y", "0")
+            tagUse.setAttribute("width", "20")
+            tagUse.setAttribute("height", "20")
+            console.log(tagUse)
+
+            svgItem?.appendChild(tagUse)
+        })
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,15 @@
+<svg id="the-svg" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <symbol id="yellow-circle-with-f" viewBox="0 0 100 100">
+            <circle cx="40" cy="40" r="40" fill="orange" />
+            <text x="40" y="70" font-size="80" text-anchor="middle" fill="white" font-family="Arial"
+                font-weight="bold">F</text>
+        </symbol>
+        <symbol id="red-circle-with-f" viewBox="0 0 100 100">
+            <circle cx="40" cy="40" r="40" fill="red" />
+            <text x="40" y="70" font-size="80" text-anchor="middle" fill="white" font-family="Arial"
+                font-weight="bold">F</text>
+        </symbol>
+    </defs>
+    <use href="#red-circle-with-f" x="0" y="0"></use>
+</svg>
