@@ -15,7 +15,7 @@ const INDEX_BY_COLUM = Object.fromEntries(REGISTERSNAMES.map((key, index) => [ke
 const modbusPlcDataRouter = express_1.default.Router();
 const service = new plc_data_service_1.default(new modbus_plc_data_repository_1.default({
     slaveID: 1,
-    host: '192.168.0.210',
+    host: 'localhost',
     port: 502
 }));
 modbusPlcDataRouter.get('/modbus-read-values', (req, res) => {

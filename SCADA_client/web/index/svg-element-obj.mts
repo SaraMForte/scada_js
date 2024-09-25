@@ -12,5 +12,10 @@ export const SVG_ELEMENT_OBJ : SvgElementObj = {
         warnValueKey : 'B',
         forceValueKey : 'C'
     },
+    'motor1' : {
+        valueKey : 'D',
+        warnValueKey : 'E',
+        forceValueKey : 'F'
+    }
 }
 

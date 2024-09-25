@@ -32,7 +32,7 @@ export default class SvgItemColorChanger {
                 for (let i = 0; i < CHILD_SVG_NAMES.length; i++) {
                     this.changesSubElementColor(svgDoc, element + CHILD_SVG_NAMES[i], choosedColor[i])
                 }
-                this.changeVisibility(svgDoc, element + '-force', valueForce)
+                this.updateSvgVisibilityInTopRight(svgDoc, element, valueForce)
 
             }
         }
@@ -64,10 +64,28 @@ export default class SvgItemColorChanger {
         })
     }
     
-    changeVisibility(svgDoc : Document, svgForceSymbol : string, valueForce : number) {
-        const svgSymbol = svgDoc.getElementById(svgForceSymbol) as HTMLObjectElement
+    updateSvgVisibilityInTopRight(svgDoc : Document, svgElement : string, valueForce : number) {
+        const svgSymbol = document.getElementById(svgElement + '-force')
+
         if(svgSymbol) {
             svgSymbol.style.visibility = valueForce === 1 ? 'visible' : 'hidden'
+
+        } else {
+
+            const objectElement = document.createElement('object')
+
+            const gettedElement = svgDoc.getElementById(svgElement)
+
+            const boundingBox = gettedElement?.getBoundingClientRect()
+            
+            objectElement.setAttribute('data', '/shared/svg-force-symbol.svg')
+            objectElement.setAttribute('type', 'image/svg+xml')
+            objectElement.setAttribute('id', svgElement + '-force')
+            objectElement.setAttribute('style', `position:absolute; x:${boundingBox?.left} ; y:${boundingBox?.top} ; width:10px ; height:10px`)
+            
+            const container = document.getElementById('force-symbols')
+            container?.appendChild(objectElement)
         }
-    }
+    }    
 }
+

@@ -14,7 +14,7 @@ const modbusPlcDataRouter = Express.Router()
 
 const service = new PlcDataService(new ModbusPlcDataRepository({
     slaveID: 1,
-    host: '192.168.0.210',
+    host: 'localhost',
     port: 502
 }))
 

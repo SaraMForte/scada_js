@@ -30,7 +30,12 @@ function createManualWindow(varName) {
  * Función que establece el bucle de la función refresView
  */
 function refreshLoop() {
-    refreshView().then(() => setTimeout(refreshLoop, 1000));
+    refreshView()
+        .then(() => setTimeout(refreshLoop, 1000))
+        .catch(error => {
+        console.error(error);
+        setTimeout(refreshLoop, 5000);
+    });
 }
 //Los Arrays se deberian cambiar a un objeto typa como ^^!!!!!!!!!
 const COLORS = {
@@ -38,6 +43,7 @@ const COLORS = {
     OFF: ['#100000', '#300000', '#ff0000', '#AA0000'],
     WARN: ['#FF9900', '#FF6600', '#FFD700', '#FFA500']
 };
+//Crea la instancia para modificar los elementos del SVG
 const svgItemColorChanger = new SvgItemColorChanger('ControlPanelSVG', COLORS);
 /**
  * Se conectará con el servidor para actualizar los elementos de la pantalla
