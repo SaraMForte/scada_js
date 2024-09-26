@@ -64,27 +64,28 @@ export default class SvgItemColorChanger {
         })
     }
     
-    updateSvgVisibilityInTopRight(svgDoc : Document, svgElement : string, valueForce : number) {
-        const svgSymbol = document.getElementById(svgElement + '-force')
-
-        if(svgSymbol) {
-            svgSymbol.style.visibility = valueForce === 1 ? 'visible' : 'hidden'
+    updateSvgVisibilityInTopRight(svgDoc : Document, subelementId : string, valueForce : number) {
+        const tagUse = svgDoc?.getElementById(subelementId + '-force')
+        console.log(tagUse)
+        if(tagUse) {
+            tagUse.style.visibility = valueForce === 1 ? 'visible' : 'hidden'
 
         } else {
+            const svgItem = svgDoc.getElementById(subelementId)
+            //const boundingBox = svgItem?.getBoundingClientRect()
 
-            const objectElement = document.createElement('object')
+            const tagUse = document.createElementNS("http://www.w3.org/2000/svg", "use")
+            tagUse.setAttribute("id", subelementId + "-force")
+            tagUse.setAttribute("href", "/shared/force-symbol.svg#red-circle-with-f")
+            tagUse.setAttribute("x", `0`)
+            tagUse.setAttribute("y", `0`)
+            tagUse.setAttribute("width", "50")
+            tagUse.setAttribute("height", "50")
+            tagUse.setAttribute("visibility", "visible")
+            console.log(tagUse)
 
-            const gettedElement = svgDoc.getElementById(svgElement)
-
-            const boundingBox = gettedElement?.getBoundingClientRect()
-            
-            objectElement.setAttribute('data', '/shared/svg-force-symbol.svg')
-            objectElement.setAttribute('type', 'image/svg+xml')
-            objectElement.setAttribute('id', svgElement + '-force')
-            objectElement.setAttribute('style', `position:absolute; x:${boundingBox?.left} ; y:${boundingBox?.top} ; width:10px ; height:10px`)
-            
-            const container = document.getElementById('force-symbols')
-            container?.appendChild(objectElement)
+            svgItem?.appendChild(tagUse)
+            console.log(svgItem)
         }
     }    
 }
