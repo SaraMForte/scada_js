@@ -5,11 +5,13 @@
             <text x="40" y="70" font-size="80" text-anchor="middle" fill="white" font-family="Arial"
                 font-weight="bold">F</text>
         </symbol>
-        <symbol id="red-circle-with-f" viewBox="0 0 100 100">
+        <symbol id="red-circle-with-f" viewBox="0 0 100 100" transform="rotate(90,100,25)">
             <circle cx="40" cy="40" r="40" fill="red" />
             <text x="40" y="70" font-size="80" text-anchor="middle" fill="white" font-family="Arial"
                 font-weight="bold">F</text>
         </symbol>
     </defs>
-    <use href="#red-circle-with-f" x="0" y="0"></use>
+    <g id="group">
+        <use href="#red-circle-with-f" x="0" y="0"></use>
+    </g>
 </svg>

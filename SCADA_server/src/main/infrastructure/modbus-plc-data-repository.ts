@@ -2,7 +2,6 @@ import Modbus, { ModbusTCPClient } from 'jsmodbus'
 import net, { Socket } from 'node:net'
 
 import PlcDataRepository from "../application/plc-data-repository";
-import { response } from 'express';
 
 const REGISTERSNAMES = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']
 const INDEX_BY_COLUM = Object.fromEntries(REGISTERSNAMES.map((key, index) => [key, index]))
@@ -31,11 +30,17 @@ export default class ModbusPlcDataRepository implements PlcDataRepository {
      */
     readValue(property: string): Promise<number> {
         return new Promise((resolve, reject) => {
-            this.socket.once('connect', () => {
+            const listernerCallback = {
+                connectListener : () => {},
+                errorListener : (err : Error) => {}
+            }
+            listernerCallback.connectListener = () => {
                 const propertyNumber = INDEX_BY_COLUM[property]
                 this.client.readHoldingRegisters(propertyNumber, 1)
                 .then(response => {
                     const value = response.response.body.values
+
+                    this.socket.removeListener('error', listernerCallback.errorListener)
                     resolve(Number(value))
                 })
                 .catch(error => {
@@ -44,9 +49,15 @@ export default class ModbusPlcDataRepository implements PlcDataRepository {
                 .finally(() => {
                     this.socket.end()
                 })
-                
-            })
-            this.socket.once('error', reject)
+            }
+
+            listernerCallback.errorListener = (err : Error) => {
+                this.socket.removeListener('connect', listernerCallback.connectListener)
+                reject(err)
+            }
+            // Leer registros cuando la conexión esté establecida
+            this.socket.once('connect', listernerCallback.connectListener)
+            this.socket.once('error', listernerCallback.errorListener)
 
             // Conectar al esclavo
             this.socket.connect(this.options)
@@ -59,18 +70,21 @@ export default class ModbusPlcDataRepository implements PlcDataRepository {
      */
     readValues() : Promise<Map<string, number>> {
         return new Promise((resolve, reject) => {
+            const listernerCallback = {
+                connectListener : () => {},
+                errorListener : (err : Error) => {}
+            }
             
-            // Leer registros cuando la conexión esté establecida
-            this.socket.once('connect', () => {
+            listernerCallback.connectListener = () => {
                 this.client.readHoldingRegisters(0, 10)  //Inicio es Inclusive, Final es exclusive
                 .then(response => {
                     const registers = response.response.body.valuesAsArray
                     const registersmap = new Map()
-                    console.log(registers)
                     for (let i = 0; i < registers.length; i++) {
                         registersmap.set(REGISTERSNAMES[i],registers[i])
                     }
-                       
+                    
+                    this.socket.removeListener('error', listernerCallback.errorListener)
                     resolve(registersmap)
                 })
                 .catch(error => {
@@ -79,9 +93,16 @@ export default class ModbusPlcDataRepository implements PlcDataRepository {
                 .finally(() => {
                     this.socket.end()
                 })
-            })
-            
-            this.socket.once('error', reject)
+            }
+
+            listernerCallback.errorListener = (err : Error) => {
+                this.socket.removeListener('connect', listernerCallback.connectListener)
+                reject(err)
+            }
+
+            // Leer registros cuando la conexión esté establecida
+            this.socket.once('connect', listernerCallback.connectListener)
+            this.socket.once('error', listernerCallback.errorListener)
 
             // Conectar al esclavo
             this.socket.connect(this.options)
@@ -96,9 +117,15 @@ export default class ModbusPlcDataRepository implements PlcDataRepository {
      */
     writeValue(property: string, value: number): Promise<void> {
         return new Promise((resolve, reject) => {
-            this.socket.once('connect', () => {
+            const listernerCallback = {
+                connectListener : () => {},
+                errorListener : (err : Error) => {}
+            }
+
+            listernerCallback.connectListener = () => {
                 this.client.writeSingleRegister(Number(property), value)
                 .then((response) => {
+                    this.socket.removeListener('error', listernerCallback.errorListener)
                     resolve()
                 })
                 .catch((error) => {
@@ -107,8 +134,16 @@ export default class ModbusPlcDataRepository implements PlcDataRepository {
                 .finally(() => {
                     this.socket.end()
                 })
-            })
-            this.socket.once('error', reject)
+            }
+
+            listernerCallback.errorListener = (err : Error) => {
+                this.socket.removeListener('connect', listernerCallback.connectListener)
+                reject(err)
+            }
+
+            // Leer registros cuando la conexión esté establecida
+            this.socket.once('connect', listernerCallback.connectListener)
+            this.socket.once('error', listernerCallback.errorListener)
 
             //Conectar al esclavo
             this.socket.connect(this.options)
@@ -122,10 +157,15 @@ export default class ModbusPlcDataRepository implements PlcDataRepository {
      */
     writeValues(valuesMap: Map<string, number>): Promise<void> {
         return new Promise((resolve, reject) => {
-            this.socket.once('connect', () => {
+            const listernerCallback = {
+                connectListener : () => {},
+                errorListener : (err : Error) => {}
+            }
+            listernerCallback.connectListener = () => {
                 Promise.all([...valuesMap.entries()].map(([key, value]) => this.client.writeSingleRegister(INDEX_BY_COLUM[key], value)
                 ))
                 .then(() => {
+                    this.socket.removeListener('error', listernerCallback.errorListener)
                     resolve()
                 })
                 .catch((error) => {
@@ -134,8 +174,16 @@ export default class ModbusPlcDataRepository implements PlcDataRepository {
                 .finally(() => {
                     this.socket.end()
                 })
-            })
-            this.socket.once('error', reject)
+            }
+            
+            listernerCallback.errorListener = (err : Error) => {
+                this.socket.removeListener('connect', listernerCallback.connectListener)
+                reject(err)
+            }
+            
+            // Leer registros cuando la conexión esté establecida
+            this.socket.once('connect', listernerCallback.connectListener)
+            this.socket.once('error', listernerCallback.errorListener)
 
             //Conectar al esclavo
             this.socket.connect(this.options)

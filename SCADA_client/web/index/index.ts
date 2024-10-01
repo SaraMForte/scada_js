@@ -1,8 +1,8 @@
-import { changeColor, changeTextContent, Colors } from "../shared/lib/refresh.mjs"
-import { setClickable } from "../shared/lib/set-clickable.mjs"
-import SvgItemColorChanger from "../shared/lib/svgItemColorChange.mjs"
+import { changeColor, changeTextContent, Colors } from "../shared/lib/refresh.js"
+import { setClickable } from "../shared/lib/set-clickable.js"
+import SvgItemColorChanger from "../shared/lib/svgItemColorChange.js"
 
-import { SVG_ELEMENT_OBJ } from "./svg-element-obj.mjs"
+import { SVG_ELEMENT_OBJ } from "./svg-element-obj.js"
 
 
 

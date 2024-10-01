@@ -1,11 +1,11 @@
 {
   "name": "scada_client",
   "version": "1.0.0",
-  "main": "dist/src/main/main.js",
+  "main": "src/main/main.js",
   "type": "module",
   "scripts": {
     "test": "",
-    "start": "tsc && electron dist/src/main/main.js",
+    "start": "tsc && electron src/main/main.js",
     "build": "tsc"
   },
   "keywords": [],

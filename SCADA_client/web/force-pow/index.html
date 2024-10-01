@@ -5,27 +5,33 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
+    <script type="module" src="./index.mjs"></script>
 </head>
 
 <body>
-    <object type="image/svg+xml" data="force-symbol.svg" id="the-svg"></object>
+    <object type="image/svg+xml" data="elements.svg" id="the-svg"></object>
+    
     <script>
         window.addEventListener("load", () => {
             const svgDoc = document.getElementById("the-svg").contentDocument
             console.log(svgDoc)
-            const svgItem = svgDoc.getElementById("red-circle-with-f")
-            console.log(svgItem)
+            // const svgItem = svgDoc.getElementById("red-circle-with-f")
+            // console.log(svgItem)
             const tagUse = document.createElementNS("http://www.w3.org/2000/svg", "use")
-            tagUse.setAttribute("href", "/force-pow/force-symbol.svg#yellow-circle-with-f")
-            tagUse.setAttribute("x", "70")
-            tagUse.setAttribute("y", "0")
-            tagUse.setAttribute("width", "20")
-            tagUse.setAttribute("height", "20")
-            console.log(tagUse)
 
-            svgItem?.appendChild(tagUse)
+            const tagg = svgDoc.getElementById('InletHopper1-hopper-group')
+
+            tagUse.setAttribute("href", "/force-pow/force-symbol.svg#yellow-circle-with-f")
+            tagUse.setAttribute("x", "0")
+            tagUse.setAttribute("y", "0")
+            tagUse.setAttribute("width", "10%")
+            tagUse.setAttribute("height", "10%")
+            console.log(tagUse)
+            console.log(tagg)
+
+            tagg.appendChild(tagUse)
+            //svgItem?.appendChild(tagUse)
         })
     </script>
 </body>
-
 </html>

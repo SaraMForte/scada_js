@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "scripts": {
     "start": "node dist/test/ExpressTest.js",
-    "test": "node dist/test/PlcModbusControllerTest.js",
+    "test": "node --trace-warnings dist/test/PlcModbusControllerTest.js",
     "build": "tsc"
   },
   "keywords": [],

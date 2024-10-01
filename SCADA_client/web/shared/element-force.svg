@@ -1,0 +1,9 @@
+<svg id="element-force" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <symbol id="force-symbol" viewBox="0 0 100 100" >
+            <circle cx="40" cy="40" r="40" fill="red" />
+            <text x="40" y="70" font-size="80" text-anchor="middle" fill="white" font-family="Arial"
+                font-weight="bold">F</text>
+        </symbol>
+    </defs>
+</svg>

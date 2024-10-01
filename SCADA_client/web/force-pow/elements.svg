@@ -1,0 +1,14 @@
+<svg id="the-svg" xmlns="http://www.w3.org/2000/svg">
+ <g
+     id="InletHopper1-hopper"
+     transform="translate(24.723211,65.56229)"
+     >
+    <g
+        id="InletHopper1-hopper-group">
+        <path
+         style="fill:#4d4d4d;fill-opacity:1;stroke-width:0.23798"
+         d="m 0,0 h -0.994603 v 1.000001 l 0.806476,0.999998 v 8 l 1.61295,1 16.935968,2e-6 1.61295,-1 v -8 l 0.806475,-1 v -1 l -0.887409,-1 z"
+         id="InletHopper1-hopper-dark" />
+    </g>
+  </g>
+</svg>
