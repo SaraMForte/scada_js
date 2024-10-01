@@ -7,8 +7,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-import SvgItemColorChanger from "../shared/lib/svgItemColorChange.js";
-import { SVG_ELEMENT_OBJ } from "./svg-element-obj.js";
+import SvgItemManager from "../shared/lib/svgItemManager.js";
+import { SCADA_SVG_ITEMS_KEYS } from "./scada-svg-item-keys.js";
 window.addEventListener("load", () => {
     initializeControlPanel();
 });
@@ -44,7 +44,7 @@ const COLORS = {
     WARN: ['#FF9900', '#FF6600', '#FFD700', '#FFA500']
 };
 //Crea la instancia para modificar los elementos del SVG
-const svgItemColorChanger = new SvgItemColorChanger('ControlPanelSVG', COLORS);
+const svgItemManager = new SvgItemManager('ControlPanelSVG', COLORS);
 /**
  * Se conectará con el servidor para actualizar los elementos de la pantalla
  */
@@ -52,6 +52,6 @@ function refreshView() {
     return __awaiter(this, void 0, void 0, function* () {
         const response = yield fetch('http://localhost:3000/modbus-read-values');
         const data = yield response.json();
-        svgItemColorChanger.changeItemColor(data, SVG_ELEMENT_OBJ);
+        svgItemManager.refreshItemsStatus(data, SCADA_SVG_ITEMS_KEYS);
     });
 }

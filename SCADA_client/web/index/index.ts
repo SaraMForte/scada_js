@@ -1,8 +1,7 @@
-import { changeColor, changeTextContent, Colors } from "../shared/lib/refresh.js"
-import { setClickable } from "../shared/lib/set-clickable.js"
-import SvgItemColorChanger from "../shared/lib/svgItemColorChange.js"
+import { Colors } from "../shared/lib/refresh.js"
+import SvgItemManager from "../shared/lib/svgItemManager.js"
 
-import { SVG_ELEMENT_OBJ } from "./svg-element-obj.js"
+import { SCADA_SVG_ITEMS_KEYS } from "./scada-svg-item-keys.js"
 
 
 
@@ -49,7 +48,7 @@ const COLORS : Colors = {
 }
 
 //Crea la instancia para modificar los elementos del SVG
-const svgItemColorChanger = new SvgItemColorChanger('ControlPanelSVG', COLORS)
+const svgItemManager = new SvgItemManager('ControlPanelSVG', COLORS)
 
 /**
  * Se conectará con el servidor para actualizar los elementos de la pantalla
@@ -58,8 +57,9 @@ async function refreshView (): Promise<void> {
     const response = await fetch('http://localhost:3000/modbus-read-values')
     const data = await response.json()
 
-    svgItemColorChanger.changeItemColor(data, SVG_ELEMENT_OBJ)
+    svgItemManager.refreshItemsStatus(data, SCADA_SVG_ITEMS_KEYS)
 }
+
 
 
 

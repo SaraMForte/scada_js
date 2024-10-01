@@ -1,4 +1,4 @@
-export const SVG_ELEMENT_OBJ = {
+export const SCADA_SVG_ITEMS_KEYS = {
     // 'InletHopper1-hopper' : {
     //     valueKey : 'A',
     //     warnValueKey : 'B',
