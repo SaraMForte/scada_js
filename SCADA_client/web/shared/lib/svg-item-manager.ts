@@ -5,18 +5,19 @@ export type Colors = {
     OFF : [string, string, string, string]  //-fill -light -medium -dark
     WARN : [string, string, string, string] //-fill -light -medium -dark
 }
-
-type RefreshItemsStatusContext = {
-    data : {[clave: string]: number},
-    scadaSvgItemsKeys : SvgItemsKeys
-}
-
 const CHILD_SVG_NAMES = ['-fill', '-light', '-medium', '-dark']
 
+/**
+ * Clase que controla las propiedades de los items internos del SVG
+ */
 export default class SvgItemManager {
     #svgDoc : Document
     #colors : Colors
 
+    /**
+     * @param idSvg El ID correspondiente al SVG a controlar en el html
+     * @param colors Los colores que se aplican según el estado del item interno del SVG
+     */
     constructor(idSvg : string, colors : Colors) {
         const svgObject = document.getElementById(idSvg) as HTMLObjectElement
         const svgDoc = svgObject?.contentDocument
@@ -28,8 +29,13 @@ export default class SvgItemManager {
         this.#colors = colors
     }
 
+    /**
+     * Actualiza el estado de los items internos del SVG
+     * @param data Los datos que contiene el estado de los items
+     * @param scadaSvgItemsKeys Las claves o IDs de los items internos del SVG y las claves para la busqueda de su estado
+     */
     refreshItemsStatus(data : {[clave: string]: number}, scadaSvgItemsKeys : SvgItemsKeys) {
-        const refreshItemsStatusContext = {data, scadaSvgItemsKeys}
+        const refreshItemsStatusContext = new RefreshItemsStatusContext(data, scadaSvgItemsKeys, this.#svgDoc, this.#colors)
         
         for (const itemId in scadaSvgItemsKeys) {
             const svgItem = this.#svgDoc.getElementById(itemId) as SVGGraphicsElement | null
@@ -37,14 +43,42 @@ export default class SvgItemManager {
                 throw new Error(`Element with ID: ${itemId} not found`)
             }
 
-            this.#changeItemColor(refreshItemsStatusContext, itemId)
-            this.#updateSymbolForceVisibility(refreshItemsStatusContext, svgItem)
+            refreshItemsStatusContext.changeItemColor(itemId)
+            refreshItemsStatusContext.updateSymbolForceVisibility(svgItem)
         }
     }
+}
 
-    #changeItemColor({data, scadaSvgItemsKeys} : RefreshItemsStatusContext, itemId : string) {
-        const valueItem = data[scadaSvgItemsKeys[itemId].valueKey]
-        const valueWarn = data[scadaSvgItemsKeys[itemId].warnValueKey]
+/**
+ * Clase que contiene los métodos del contexto de refreshItemStatus
+ */
+class RefreshItemsStatusContext {
+    #data
+    #scadaSvgItemsKeys 
+    #colors
+    #svgDoc
+
+    /**
+     * 
+     * @param data Los datos que contiene el estado de los items
+     * @param scadaSvgItemsKeys Las claves o IDs de los items internos del SVG y las claves para la busqueda de su estado
+     * @param svgDoc Documento del DOM que contiene el SVG
+     * @param colors Los colores que se aplican según el estado del item interno del SVG
+     */
+    constructor(data : {[clave: string]: number}, scadaSvgItemsKeys : SvgItemsKeys, svgDoc : Document, colors : Colors) {
+        this.#data = data
+        this.#scadaSvgItemsKeys = scadaSvgItemsKeys
+        this.#svgDoc = svgDoc
+        this.#colors = colors
+    }
+
+    /**
+     * Cambia el color o colores del item
+     * @param itemId Id de del item que cambiará de color
+     */
+    changeItemColor(itemId : string) {
+        const valueItem = this.#data[this.#scadaSvgItemsKeys[itemId].valueKey]
+        const valueWarn = this.#data[this.#scadaSvgItemsKeys[itemId].warnValueKey]
 
         const choosedColor = this.#chooseColor(valueItem, valueWarn)
 
@@ -79,11 +113,16 @@ export default class SvgItemManager {
         })
     }
     
-    #updateSymbolForceVisibility({data, scadaSvgItemsKeys} : RefreshItemsStatusContext, svgItem : SVGGraphicsElement) {
+    /**
+     * Actualiza la visibilidad del simbolo de forzado asociado a un item o lo añade
+     * @param svgItem elemento grafico del SVG al que se añade el simbolo de forzado
+     */
+    updateSymbolForceVisibility(svgItem : SVGGraphicsElement) {
         const tagUse = this.#svgDoc.getElementById(svgItem.id + '-force')
 
         if(tagUse) {
-            tagUse.style.visibility = data[scadaSvgItemsKeys[svgItem.id].forceValueKey] ? 'visible' : 'hidden'
+            const forceDataValue = this.#data[this.#scadaSvgItemsKeys[svgItem.id].forceValueKey]
+            tagUse.style.visibility = forceDataValue ? 'visible' : 'hidden'
 
         } else {
             const boundOfUse = svgItem?.getBBox()
