@@ -72,4 +72,26 @@ main object {
     
 }
 
+/* Tabla encima del SVG con el mismo tamaño que el cuadrado */
+#tabla-produccion {
+    width: 20%; /* Ancho igual al del cuadrado */
+    height: 20%; /* Alto igual al del cuadrado */
+    border-collapse: collapse;
+    position: absolute;
+    top: 20em;  /* Posición alineada con la parte superior del cuadrado */
+    left: 20em; /* Posición alineada con la esquina izquierda del cuadrado */
+    background-color: white;
+    opacity: 0.9;
+    z-index: 10; /* Asegura que la tabla esté por encima del SVG */
 
+    /* Permitir scroll si el contenido excede el tamaño */
+    overflow: auto;
+    display: block; /* Necesario para que 'overflow' funcione en las tablas */
+}
+
+#tabla-produccion th, #tabla-produccion td {
+    border: 1px solid #ccc;
+    padding: 8px;
+    text-align: center;
+    font-size: 12px; /* Reducir tamaño de fuente para ajustarse al tamaño */
+}

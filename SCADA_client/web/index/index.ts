@@ -1,13 +1,12 @@
 import { Colors } from "../shared/lib/refresh.js"
-import SvgItemManager from "../shared/lib/svgItemManager.js"
+import SvgItemManager from "../shared/lib/svg-item-manager.js"
+import TableManager from "../shared/lib/table-manager.js"
 
 import { SCADA_SVG_ITEMS_KEYS } from "./scada-svg-item-keys.js"
 
-
-
-
 window.addEventListener("load", () => {
     initializeControlPanel()
+
 })
 
 //------------------------------------------------ Funtions -----------------------------------------------------
@@ -15,6 +14,7 @@ function initializeControlPanel() {
     console.info('Initializing Control Panel')
     setClickableInit()
     refreshLoop()
+    tableView()
 }
 /**
  * Establece los elementos clickables y su función
@@ -60,6 +60,8 @@ async function refreshView (): Promise<void> {
     svgItemManager.refreshItemsStatus(data, SCADA_SVG_ITEMS_KEYS)
 }
 
-
-
-
+async function tableView() {
+    const tableManager = new TableManager('tabla-produccion')
+    
+    tableManager.createTable(['a', 'b', 'c'])
+}

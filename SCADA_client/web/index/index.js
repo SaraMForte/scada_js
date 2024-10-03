@@ -7,7 +7,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-import SvgItemManager from "../shared/lib/svgItemManager.js";
+import SvgItemManager from "../shared/lib/svg-item-manager.js";
+import TableManager from "../shared/lib/table-manager.js";
 import { SCADA_SVG_ITEMS_KEYS } from "./scada-svg-item-keys.js";
 window.addEventListener("load", () => {
     initializeControlPanel();
@@ -17,6 +18,7 @@ function initializeControlPanel() {
     console.info('Initializing Control Panel');
     setClickableInit();
     refreshLoop();
+    tableView();
 }
 /**
  * Establece los elementos clickables y su función
@@ -53,5 +55,11 @@ function refreshView() {
         const response = yield fetch('http://localhost:3000/modbus-read-values');
         const data = yield response.json();
         svgItemManager.refreshItemsStatus(data, SCADA_SVG_ITEMS_KEYS);
+    });
+}
+function tableView() {
+    return __awaiter(this, void 0, void 0, function* () {
+        const tableManager = new TableManager('tabla-produccion');
+        tableManager.createTable(['a', 'b', 'c']);
     });
 }
