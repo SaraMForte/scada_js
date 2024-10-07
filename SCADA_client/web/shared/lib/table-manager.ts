@@ -1,58 +1,69 @@
-const datosProduccion = [
-    { producto: 'Producto A', unidades: 100, estado: 'En Proceso' },
-    { producto: 'Producto B', unidades: 250, estado: 'Finalizado' },
-    { producto: 'Producto C', unidades: 50, estado: 'Pendiente' }
-];
-
 export default class TableManager {
-    #tableId
+    #tableDoc
+    #rowsHeaders
 
-    constructor(tableId : string) {
-        this.#tableId = tableId
-    }
-
-    get tableId() {
-        return this.#tableId
-    }
-
-    createTable(rowsHeaders : string[]) {
-        const table = document.getElementById(this.#tableId)
-        if(!table) {
-            throw new Error(`The table with ID: ${this.#tableId} not found`)
+    constructor(tableId : string, rowsHeaders : {[headerName : string] : string}) {
+        const tableDoc = document.getElementById(tableId)
+        if(!tableDoc) {
+            throw new Error(`The table with ID: ${tableId} not found`)
         }
 
-        const tableThead = this.#getTableThead(rowsHeaders)
-        const tableBody = this.#getTableBody([])
-
-        table.innerHTML = tableThead + tableBody
-    }
-
-    #getTableThead(rowsHeaders : string[]) {
-        if(!rowsHeaders.length) {
+        const headerObj = Object.entries(rowsHeaders)
+        if(!headerObj.length) {
             throw new Error('Rows headers not found')
         }
 
-        let tableThead : string = `<thead><tr>`
-        for (const rowHeader of rowsHeaders) {
-            tableThead += `<th>${rowHeader}</th>`
-        }
+        this.#tableDoc = tableDoc
+        this.#rowsHeaders = headerObj
+    }
+
+    get tableId() {
+        return this.#tableDoc
+    }
+
+    createTable() {
+        const tableThead = this.#getTableThead()
+        const tableBody = this.#getTableBody([])
+
+        this.#tableDoc.innerHTML = tableThead + tableBody
+    }
+
+    #getTableThead() {
+        let tableThead = `<thead><tr>`
+        tableThead += this.#rowsHeaders
+            .map((header) => `<th>${header[1]}</th>`)
+            .join('')
         tableThead += `</tr></thead>`
+
         return tableThead
     }
 
-    #getTableBody(dataBody : Array<{}>) {
+    #getTableBody(dataBody : {[key: string] : unknown}[]) {
         if(!dataBody.length) {
-            return `<tbody><tr></tr></tbody>`
+            const rowHeaderLenght = this.#rowsHeaders.length
+            return `<tbody><tr><td colspan="${rowHeaderLenght}">Data not found</td></tr></tbody>`
         }
 
-        let tableBody = `<tbody><tr>`
+        let tableBody = `<tbody>`
         for (const data of dataBody) {
-            for(const [key, value] of Object.entries(data)) {
-                tableBody += `<td>${value}</td>`
-            }
+            tableBody += `<tr>`
+            tableBody += this.#rowsHeaders
+                .map(rowContain => `<td>${data[rowContain[0] ?? 'N/A']}</td>`)
+                .join('')
+            tableBody += `</tr>`
         }
-        tableBody += `</tr></tbody>`
+        tableBody += `</tbody>`
+
         return tableBody
+    }
+
+    refreshTable(dataBody : {[key: string] : unknown}[]) {
+        const tableTbody = document.querySelector(`#${this.#tableDoc.id} tbody`)
+        if(!tableTbody) {
+            throw new Error(`The table with ID: ${this.#tableDoc} not found`)
+        }
+
+        tableTbody.innerHTML = this.#getTableBody(dataBody)
     }
 }
 

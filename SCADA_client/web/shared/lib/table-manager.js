@@ -9,52 +9,60 @@ var __classPrivateFieldGet = (this && this.__classPrivateFieldGet) || function (
     if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
     return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
 };
-var _TableManager_instances, _TableManager_tableId, _TableManager_getTableThead, _TableManager_getTableBody;
-const datosProduccion = [
-    { producto: 'Producto A', unidades: 100, estado: 'En Proceso' },
-    { producto: 'Producto B', unidades: 250, estado: 'Finalizado' },
-    { producto: 'Producto C', unidades: 50, estado: 'Pendiente' }
-];
+var _TableManager_instances, _TableManager_tableDoc, _TableManager_rowsHeaders, _TableManager_getTableThead, _TableManager_getTableBody;
 class TableManager {
-    constructor(tableId) {
+    constructor(tableId, rowsHeaders) {
         _TableManager_instances.add(this);
-        _TableManager_tableId.set(this, void 0);
-        __classPrivateFieldSet(this, _TableManager_tableId, tableId, "f");
+        _TableManager_tableDoc.set(this, void 0);
+        _TableManager_rowsHeaders.set(this, void 0);
+        const tableDoc = document.getElementById(tableId);
+        if (!tableDoc) {
+            throw new Error(`The table with ID: ${tableId} not found`);
+        }
+        const headerObj = Object.entries(rowsHeaders);
+        if (!headerObj.length) {
+            throw new Error('Rows headers not found');
+        }
+        __classPrivateFieldSet(this, _TableManager_tableDoc, tableDoc, "f");
+        __classPrivateFieldSet(this, _TableManager_rowsHeaders, headerObj, "f");
     }
     get tableId() {
-        return __classPrivateFieldGet(this, _TableManager_tableId, "f");
+        return __classPrivateFieldGet(this, _TableManager_tableDoc, "f");
     }
-    createTable(rowsHeaders) {
-        const table = document.getElementById(__classPrivateFieldGet(this, _TableManager_tableId, "f"));
-        if (!table) {
-            throw new Error(`The table with ID: ${__classPrivateFieldGet(this, _TableManager_tableId, "f")} not found`);
-        }
-        const tableThead = __classPrivateFieldGet(this, _TableManager_instances, "m", _TableManager_getTableThead).call(this, rowsHeaders);
+    createTable() {
+        const tableThead = __classPrivateFieldGet(this, _TableManager_instances, "m", _TableManager_getTableThead).call(this);
         const tableBody = __classPrivateFieldGet(this, _TableManager_instances, "m", _TableManager_getTableBody).call(this, []);
-        table.innerHTML = tableThead + tableBody;
+        __classPrivateFieldGet(this, _TableManager_tableDoc, "f").innerHTML = tableThead + tableBody;
+    }
+    refreshTable(dataBody) {
+        const tableTbody = document.querySelector(`#${__classPrivateFieldGet(this, _TableManager_tableDoc, "f").id} tbody`);
+        if (!tableTbody) {
+            throw new Error(`The table with ID: ${__classPrivateFieldGet(this, _TableManager_tableDoc, "f")} not found`);
+        }
+        tableTbody.innerHTML = __classPrivateFieldGet(this, _TableManager_instances, "m", _TableManager_getTableBody).call(this, dataBody);
     }
 }
-_TableManager_tableId = new WeakMap(), _TableManager_instances = new WeakSet(), _TableManager_getTableThead = function _TableManager_getTableThead(rowsHeaders) {
-    if (!rowsHeaders.length) {
-        throw new Error('Rows headers not found');
-    }
+_TableManager_tableDoc = new WeakMap(), _TableManager_rowsHeaders = new WeakMap(), _TableManager_instances = new WeakSet(), _TableManager_getTableThead = function _TableManager_getTableThead() {
     let tableThead = `<thead><tr>`;
-    for (const rowHeader of rowsHeaders) {
-        tableThead += `<th>${rowHeader}</th>`;
-    }
+    tableThead += __classPrivateFieldGet(this, _TableManager_rowsHeaders, "f")
+        .map((header) => `<th>${header[1]}</th>`)
+        .join('');
     tableThead += `</tr></thead>`;
     return tableThead;
 }, _TableManager_getTableBody = function _TableManager_getTableBody(dataBody) {
     if (!dataBody.length) {
-        return `<tbody><tr></tr></tbody>`;
+        const rowHeaderLenght = __classPrivateFieldGet(this, _TableManager_rowsHeaders, "f").length;
+        return `<tbody><tr><td colspan="${rowHeaderLenght}">Data not found</td></tr></tbody>`;
     }
-    let tableBody = `<tbody><tr>`;
+    let tableBody = `<tbody>`;
     for (const data of dataBody) {
-        for (const [key, value] of Object.entries(data)) {
-            tableBody += `<td>${value}</td>`;
-        }
+        tableBody += `<tr>`;
+        tableBody += __classPrivateFieldGet(this, _TableManager_rowsHeaders, "f")
+            .map(rowContain => { var _a; return `<td>${data[(_a = rowContain[0]) !== null && _a !== void 0 ? _a : 'N/A']}</td>`; })
+            .join('');
+        tableBody += `</tr>`;
     }
-    tableBody += `</tr></tbody>`;
+    tableBody += `</tbody>`;
     return tableBody;
 };
 export default TableManager;

@@ -74,7 +74,7 @@ main object {
 
 /* Tabla encima del SVG con el mismo tamaño que el cuadrado */
 #tabla-produccion {
-    width: 20%; /* Ancho igual al del cuadrado */
+    width: 28%; /* Ancho igual al del cuadrado */
     height: 20%; /* Alto igual al del cuadrado */
     border-collapse: collapse;
     position: absolute;
