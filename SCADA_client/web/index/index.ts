@@ -1,3 +1,4 @@
+import SvgTextManager, { changeTextContent } from "../shared/lib/svg-text-manager.js";
 import SvgDataViewController from "../shared/lib/svg-data-view-controller.js";
 import { Colors } from "../shared/lib/svg-item-manager.js";
 import TableViewController from "../shared/lib/table-view-controller.js";
@@ -40,6 +41,11 @@ window.addEventListener("load", () => {
         dataUrl : 'PON UNA URL'
     })
 
+    const svgTextManager = new SvgTextManager('ControlPanelSVG')
+
+    svgTextManager.changeTextGroupContent(new Map([['textGroup1' , new Map([['capacidad', 'value1']])]]))
+
+    svgDataViewController.initializeOnce()
     svgDataViewController.refreshLoop(1000)
     tableViewController.refreshLoop(1000)
 

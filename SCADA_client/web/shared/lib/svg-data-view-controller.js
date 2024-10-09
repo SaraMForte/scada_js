@@ -48,6 +48,9 @@ class SvgDataViewController {
             yield refreshLoop(this, loopTime);
         });
     }
+    initializeOnce() {
+        __classPrivateFieldGet(this, _SvgDataViewController_svgItemManager, "f").setItemsClickables(__classPrivateFieldGet(this, _SvgDataViewController_svgItemsKeys, "f"), () => { });
+    }
 }
 _SvgDataViewController_svgItemManager = new WeakMap(), _SvgDataViewController_dataUrl = new WeakMap(), _SvgDataViewController_svgItemsKeys = new WeakMap();
 export default SvgDataViewController;

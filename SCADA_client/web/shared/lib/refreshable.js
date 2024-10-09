@@ -18,26 +18,3 @@ export function refreshLoop(refreshable, loopTime) {
         });
     });
 }
-//Clase Abstracta
-class test1 {
-    constructor(greetings1, greetings2) {
-        this.greetings1 = greetings1;
-        this.greetings2 = greetings2;
-    }
-    refre() {
-        console.log(this.greetings1);
-    }
-    refreLoop() {
-        console.log(this.greetings2);
-    }
-}
-class test2 extends test1 {
-    constructor(greetings1, greetings2) {
-        super(greetings1, greetings2);
-        this.greetings1 = greetings1;
-        this.greetings2 = greetings2;
-    }
-}
-const refreTest1 = new test2('hi', 'bonjour');
-refreTest1.refre();
-refreTest1.refreLoop();

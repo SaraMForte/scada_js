@@ -36,4 +36,9 @@ export default class SvgDataViewController implements Refreshable{
     async refreshLoop(loopTime : number) {
         await refreshLoop(this , loopTime)
     }
+
+    initializeOnce() {
+        this.#svgItemManager.setItemsClickables(this.#svgItemsKeys, () => {})
+    }
+
 }

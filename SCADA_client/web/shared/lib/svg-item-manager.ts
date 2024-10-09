@@ -1,5 +1,6 @@
 import { SvgItemsKeys  } from "../../index/scada-svg-item-keys.js"
 
+type OnClickCallback = (this: HTMLElement) => any
 export type Colors = {    
     ON : [string, string, string, string]   //-fill -light -medium -dark
     OFF : [string, string, string, string]  //-fill -light -medium -dark
@@ -46,6 +47,55 @@ export default class SvgItemManager {
             refreshItemsStatusContext.changeItemColor(itemId)
             refreshItemsStatusContext.updateSymbolForceVisibility(svgItem)
         }
+    }
+
+    /**
+     * Establece el funcionamiento de los elementos al ser clickados
+     * @param scadaSvgItemsKeys Las claves o IDs de los items internos del SVG 
+     * @param callback funcion que se realiza al clickar el elemento
+     */
+    setItemsClickables(scadaSvgItemsKeys : SvgItemsKeys, callback : OnClickCallback) {
+        for(const itemId in scadaSvgItemsKeys) {
+            const svgItem = this.#svgDoc.getElementById(itemId) as SVGGraphicsElement | null
+            if (!svgItem) {
+                throw new Error(`No SVG Item found with ID: ${itemId}`)
+            }
+            this.#selectableObjectIndicator(svgItem)
+            
+            svgItem.addEventListener("click", callback)
+        }
+    }
+
+    /**
+     * Establece como se indica que un elemento es clickable
+     * @param svgItem subelemento clickable
+     */
+    #selectableObjectIndicator(svgItem : SVGGraphicsElement) {
+        const itemBox = svgItem.getBBox()
+        svgItem.style.cursor = "pointer"
+        
+        const itemIndicator = document.createElementNS("http://www.w3.org/2000/svg", "rect")
+        itemIndicator.setAttribute("x", `-2`)
+        itemIndicator.setAttribute("y", `-2`)
+        itemIndicator.setAttribute("rx", `1`)
+        itemIndicator.setAttribute("ry", `1`)
+        itemIndicator.setAttribute("width", `${itemBox.width + 4}`)
+        itemIndicator.setAttribute("height", `${itemBox.height + 4}`)
+        itemIndicator.setAttribute("fill", "none")
+        itemIndicator.setAttribute("stroke", "white")
+        itemIndicator.setAttribute("stroke-width", "1")
+        itemIndicator.style.visibility = 'hidden'
+
+        svgItem.appendChild(itemIndicator)
+
+        svgItem.addEventListener("mouseover", () => {
+            itemIndicator.style.visibility = 'visible'
+            // svgItem.setAttribute('stroke', 'white')
+        })
+        svgItem.addEventListener("mouseout", () => {
+            itemIndicator.style.visibility = 'hidden'
+            // svgItem.removeAttribute("stroke")
+        })
     }
 }
 
@@ -125,12 +175,12 @@ class RefreshItemsStatusContext {
             tagUse.style.visibility = forceDataValue ? 'visible' : 'hidden'
 
         } else {
-            const boundOfUse = svgItem?.getBBox()
+            const boxOfUse = svgItem?.getBBox()
 
             const tagUse = document.createElementNS("http://www.w3.org/2000/svg", "use")
             tagUse.setAttribute("href", "/shared/element-force.svg#force-symbol")
             tagUse.setAttribute("id", `${svgItem.id}-force`)
-            tagUse.setAttribute("x", `${boundOfUse?.width-10}`)  //-10 perfect right
+            tagUse.setAttribute("x", `${boxOfUse?.width-10}`)  //-10 perfect right
             tagUse.setAttribute("y", `-10`)
             tagUse.setAttribute("width", "20")
             tagUse.setAttribute("height", "20")

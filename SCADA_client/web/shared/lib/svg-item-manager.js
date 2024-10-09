@@ -9,7 +9,7 @@ var __classPrivateFieldGet = (this && this.__classPrivateFieldGet) || function (
     if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
     return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
 };
-var _SvgItemManager_svgDoc, _SvgItemManager_colors, _RefreshItemsStatusContext_instances, _RefreshItemsStatusContext_data, _RefreshItemsStatusContext_scadaSvgItemsKeys, _RefreshItemsStatusContext_colors, _RefreshItemsStatusContext_svgDoc, _RefreshItemsStatusContext_chooseColor, _RefreshItemsStatusContext_changesItemFragmentColor;
+var _SvgItemManager_instances, _SvgItemManager_svgDoc, _SvgItemManager_colors, _SvgItemManager_selectableObjectIndicator, _RefreshItemsStatusContext_instances, _RefreshItemsStatusContext_data, _RefreshItemsStatusContext_scadaSvgItemsKeys, _RefreshItemsStatusContext_colors, _RefreshItemsStatusContext_svgDoc, _RefreshItemsStatusContext_chooseColor, _RefreshItemsStatusContext_changesItemFragmentColor;
 const CHILD_SVG_NAMES = ['-fill', '-light', '-medium', '-dark'];
 /**
  * Clase que controla las propiedades de los items internos del SVG
@@ -20,6 +20,7 @@ class SvgItemManager {
      * @param colors Los colores que se aplican según el estado del item interno del SVG
      */
     constructor(idSvg, colors) {
+        _SvgItemManager_instances.add(this);
         _SvgItemManager_svgDoc.set(this, void 0);
         _SvgItemManager_colors.set(this, void 0);
         const svgObject = document.getElementById(idSvg);
@@ -46,8 +47,46 @@ class SvgItemManager {
             refreshItemsStatusContext.updateSymbolForceVisibility(svgItem);
         }
     }
+    /**
+     * Establece el funcionamiento de los elementos al ser clickados
+     * @param scadaSvgItemsKeys Las claves o IDs de los items internos del SVG
+     * @param callback funcion que se realiza al clickar el elemento
+     */
+    setItemsClickables(scadaSvgItemsKeys, callback) {
+        for (const itemId in scadaSvgItemsKeys) {
+            const svgItem = __classPrivateFieldGet(this, _SvgItemManager_svgDoc, "f").getElementById(itemId);
+            if (!svgItem) {
+                throw new Error(`No SVG Item found with ID: ${itemId}`);
+            }
+            __classPrivateFieldGet(this, _SvgItemManager_instances, "m", _SvgItemManager_selectableObjectIndicator).call(this, svgItem);
+            svgItem.addEventListener("click", callback);
+        }
+    }
 }
-_SvgItemManager_svgDoc = new WeakMap(), _SvgItemManager_colors = new WeakMap();
+_SvgItemManager_svgDoc = new WeakMap(), _SvgItemManager_colors = new WeakMap(), _SvgItemManager_instances = new WeakSet(), _SvgItemManager_selectableObjectIndicator = function _SvgItemManager_selectableObjectIndicator(svgItem) {
+    const itemBox = svgItem.getBBox();
+    svgItem.style.cursor = "pointer";
+    const itemIndicator = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    itemIndicator.setAttribute("x", `-2`);
+    itemIndicator.setAttribute("y", `-2`);
+    itemIndicator.setAttribute("rx", `1`);
+    itemIndicator.setAttribute("ry", `1`);
+    itemIndicator.setAttribute("width", `${itemBox.width + 4}`);
+    itemIndicator.setAttribute("height", `${itemBox.height + 4}`);
+    itemIndicator.setAttribute("fill", "none");
+    itemIndicator.setAttribute("stroke", "white");
+    itemIndicator.setAttribute("stroke-width", "1");
+    itemIndicator.style.visibility = 'hidden';
+    svgItem.appendChild(itemIndicator);
+    svgItem.addEventListener("mouseover", () => {
+        itemIndicator.style.visibility = 'visible';
+        // svgItem.setAttribute('stroke', 'white')
+    });
+    svgItem.addEventListener("mouseout", () => {
+        itemIndicator.style.visibility = 'hidden';
+        // svgItem.removeAttribute("stroke")
+    });
+};
 export default SvgItemManager;
 /**
  * Clase que contiene los métodos del contexto de refreshItemStatus
@@ -94,11 +133,11 @@ class RefreshItemsStatusContext {
             tagUse.style.visibility = forceDataValue ? 'visible' : 'hidden';
         }
         else {
-            const boundOfUse = svgItem === null || svgItem === void 0 ? void 0 : svgItem.getBBox();
+            const boxOfUse = svgItem === null || svgItem === void 0 ? void 0 : svgItem.getBBox();
             const tagUse = document.createElementNS("http://www.w3.org/2000/svg", "use");
             tagUse.setAttribute("href", "/shared/element-force.svg#force-symbol");
             tagUse.setAttribute("id", `${svgItem.id}-force`);
-            tagUse.setAttribute("x", `${(boundOfUse === null || boundOfUse === void 0 ? void 0 : boundOfUse.width) - 10}`); //-10 perfect right
+            tagUse.setAttribute("x", `${(boxOfUse === null || boxOfUse === void 0 ? void 0 : boxOfUse.width) - 10}`); //-10 perfect right
             tagUse.setAttribute("y", `-10`);
             tagUse.setAttribute("width", "20");
             tagUse.setAttribute("height", "20");
