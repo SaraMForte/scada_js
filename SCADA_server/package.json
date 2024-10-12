@@ -2,18 +2,21 @@
   "name": "scada_server",
   "version": "1.0.0",
   "scripts": {
-    "start": "node dist/test/ExpressTest.js",
-    "test": "node --trace-warnings dist/test/PlcModbusControllerTest.js",
+    "start": "node --trace-warnings dist/test/PlcModbusControllerTest.js",
+    "test": "jest",
     "build": "tsc"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@jest/globals": "^29.7.0",
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
+    "@types/jest": "^29.5.13",
     "@types/node": "^22.5.0",
     "@types/pg": "^8.11.10",
+    "ts-jest": "^29.2.5",
     "typescript": "^5.5.4"
   },
   "dependencies": {
