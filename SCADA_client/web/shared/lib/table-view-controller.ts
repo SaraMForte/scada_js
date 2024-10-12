@@ -26,6 +26,7 @@ export default class TableViewController implements Refreshable {
     }
 
     async refresh() {
+        //Realizar la implementación de URL
         this.#tableManager.refreshTable(datosProduccion)
     }
 

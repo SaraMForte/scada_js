@@ -18,30 +18,30 @@ var __classPrivateFieldGet = (this && this.__classPrivateFieldGet) || function (
     if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
     return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
 };
-var _SvgDataViewController_svgItemManager, _SvgDataViewController_dataUrl, _SvgDataViewController_svgItemsKeys;
+var _SvgItemViewController_svgItemManager, _SvgItemViewController_dataUrl, _SvgItemViewController_svgItemsKeys;
 import { refreshLoop } from "./refreshable.js";
 import SvgItemManager from "./svg-item-manager.js";
-class SvgDataViewController {
+class SvgItemViewController {
     constructor({ idSvg, colors, dataUrl, svgItemsKeys }) {
-        _SvgDataViewController_svgItemManager.set(this, void 0);
-        _SvgDataViewController_dataUrl.set(this, void 0);
-        _SvgDataViewController_svgItemsKeys.set(this, void 0);
-        __classPrivateFieldSet(this, _SvgDataViewController_svgItemManager, new SvgItemManager(idSvg, colors), "f");
-        __classPrivateFieldSet(this, _SvgDataViewController_dataUrl, dataUrl, "f");
-        __classPrivateFieldSet(this, _SvgDataViewController_svgItemsKeys, svgItemsKeys, "f");
+        _SvgItemViewController_svgItemManager.set(this, void 0);
+        _SvgItemViewController_dataUrl.set(this, void 0);
+        _SvgItemViewController_svgItemsKeys.set(this, void 0);
+        __classPrivateFieldSet(this, _SvgItemViewController_svgItemManager, new SvgItemManager(idSvg, colors), "f");
+        __classPrivateFieldSet(this, _SvgItemViewController_dataUrl, dataUrl, "f");
+        __classPrivateFieldSet(this, _SvgItemViewController_svgItemsKeys, svgItemsKeys, "f");
     }
     /**
      * Se conectará con el servidor para actualizar los elementos de la pantalla
      */
     refresh() {
         return __awaiter(this, void 0, void 0, function* () {
-            const response = yield fetch(__classPrivateFieldGet(this, _SvgDataViewController_dataUrl, "f"));
+            const response = yield fetch(__classPrivateFieldGet(this, _SvgItemViewController_dataUrl, "f"));
             const data = yield response.json();
-            __classPrivateFieldGet(this, _SvgDataViewController_svgItemManager, "f").refreshItemsStatus(data, __classPrivateFieldGet(this, _SvgDataViewController_svgItemsKeys, "f"));
+            __classPrivateFieldGet(this, _SvgItemViewController_svgItemManager, "f").refreshItemsStatus(data, __classPrivateFieldGet(this, _SvgItemViewController_svgItemsKeys, "f"));
         });
     }
     /**
-     * Función que establece el bucle de la función refresView
+     * Función que establece el bucle de la función refresh
      */
     refreshLoop(loopTime) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -49,8 +49,8 @@ class SvgDataViewController {
         });
     }
     initializeOnce() {
-        __classPrivateFieldGet(this, _SvgDataViewController_svgItemManager, "f").setItemsClickables(__classPrivateFieldGet(this, _SvgDataViewController_svgItemsKeys, "f"), () => { });
+        __classPrivateFieldGet(this, _SvgItemViewController_svgItemManager, "f").setItemsClickables(__classPrivateFieldGet(this, _SvgItemViewController_svgItemsKeys, "f"), () => { });
     }
 }
-_SvgDataViewController_svgItemManager = new WeakMap(), _SvgDataViewController_dataUrl = new WeakMap(), _SvgDataViewController_svgItemsKeys = new WeakMap();
-export default SvgDataViewController;
+_SvgItemViewController_svgItemManager = new WeakMap(), _SvgItemViewController_dataUrl = new WeakMap(), _SvgItemViewController_svgItemsKeys = new WeakMap();
+export default SvgItemViewController;
