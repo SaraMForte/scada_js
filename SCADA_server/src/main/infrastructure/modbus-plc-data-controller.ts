@@ -20,7 +20,7 @@ const service = new PlcDataService(new ModbusPlcDataRepository({
 
 modbusPlcDataRouter.get('/modbus-read-values', (req, res) => {
     service.readValues()
-        .then( data => res.json(Object.fromEntries(data)))
+        .then(data => res.json(data))
 })
 
 modbusPlcDataRouter.get('/modbus-read-value', (req, res) => {

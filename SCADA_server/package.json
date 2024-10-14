@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "scripts": {
     "start": "node --trace-warnings dist/test/PlcModbusControllerTest.js",
-    "test": "jest",
+    "test": "cls && tsc && jest --verbose",
     "build": "tsc"
   },
   "keywords": [],

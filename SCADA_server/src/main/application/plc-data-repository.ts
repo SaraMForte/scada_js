@@ -36,3 +36,4 @@ export default interface PlcDataRepository {
      */
     writeValues(valuesMap : Map<string, number>) : Promise<void>
 }
+
