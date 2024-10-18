@@ -1,6 +1,7 @@
 /**
  * La clase implementa la interfaz con el contrato de 'plc-data-repository'
  */
+import { PropertyError, PropertyNotFoundError, PropertyWriteError, RepeatedPropertyError } from "./errors";
 import PlcDataRepository from "./plc-data-repository";
 
 export type PlcDatasResoult = {
@@ -9,26 +10,58 @@ export type PlcDatasResoult = {
 }
 
 export default class PlcDataService {
-    private readonly repositories : PlcDataRepository[]
+    readonly #repositories : PlcDataRepository[]
+
 
     constructor(...repositories : PlcDataRepository[]) {
-        this.repositories = repositories
+        this.#repositories = repositories
     }
 
+    /**
+     * Busca y devuelve el valor de la propiedad especificada como argumento
+     * @param property El nombre de la propiedad que se desea buscar
+     * @returns Una promesa que se resuelve con el valor de la propiedad encontrada
+     * @throws {PropertyNotFoundError} Cuando no se ha podido encontrar la propiedad
+     * @throws {RepeatedPropertyError} Cuando se encuentran multiples propiedades repetidas en distintos repositorios
+     */
     async readValue(property : string) : Promise<number> {
-        const repositoriesPromises = this.repositories
-            .map(repository => repository.readValue(property)
-                .catch<Error>(err => err))
-            
-        const dataOrErrorArray = await Promise.all(repositoriesPromises)
-        for(const dataOrError of dataOrErrorArray) {
-            if(!(dataOrError instanceof Error)) {
-                return dataOrError
-            }
+        const dataOrErrorArray = await this.#getRepositoriesPromisesOfRead(property)
+        const validData = await this.#filterValidValues(dataOrErrorArray)
+        return this.#resolvePropertyValue(property, validData)
+    }
+
+    async #getRepositoriesPromisesOfRead (property : string) {
+        const repositoriesPromises = this.#repositories
+        .map(repository => repository.readValue(property)
+            .catch<Error>(err => err))
+        return await Promise.all(repositoriesPromises)
+    }
+
+    async #filterValidValues (dataOrErrorArray : Array<number | Error>) {
+        return dataOrErrorArray.filter((dataOrError) => this.#isValidData(dataOrError))
+    }
+
+    #isValidData(dataOrError : number | Error): dataOrError is number {
+        return !(dataOrError instanceof Error)
+    }
+
+    #resolvePropertyValue (property : string, validDataArray : number[]) {
+        switch (validDataArray.length) {
+            case 0: 
+                throw new PropertyNotFoundError(property)
+            case 1:
+                return validDataArray[0]
+            default:
+                throw new RepeatedPropertyError(property, validDataArray.length)
         }
-        throw new Error(`value of property ${property} is not been reached`)
     }
     
+    /**
+     * Busca y devuelve los valores de las propiedades espeficicadas como argumento. En caso de no ser especicadas, 
+     * se devolveran los valores o errores de todas las propiedades encontradas
+     * @param propiertiesArray Lista de nombres de propiedades a buscar. Si no se proporciona, se buscan todas.
+     * @returns Una promesa de un objeto que se resuelve con una lista de datos y otra lista de errores
+     */
     readValues(propiertiesArray? : string[]) : Promise<PlcDatasResoult> {
         if(propiertiesArray) {
             return this.#readValuesWithPropierties(propiertiesArray)
@@ -58,7 +91,7 @@ export default class PlcDataService {
     }
 
     async #readValuesWithoutPropierties() : Promise<PlcDatasResoult> {
-        const repositoriesPromises : Promise<Map<string, number > | Error>[] = this.repositories
+        const repositoriesPromises : Promise<Map<string, number > | Error>[] = this.#repositories
         .map(repository => repository.readValues()
             .catch(err => err))
         
@@ -79,13 +112,67 @@ export default class PlcDataService {
         return {data : dataMap, error : errorArray}
     }
 
-    writeValue(property : string, value : number) : Promise<void> {
-        return this.repositories[0].writeValue(property, value)
+    /**
+     * Comprueba si una propiedad existe y no está en multiples dispositivos antes de escribir un nuevo valor
+     * @param property Nombre de la propiedad que se desea escribir
+     * @param value Valor que se desea asignar a la propiedad
+     * @returns Una promesa vacia que se resuelve cuando la operación de escritura se completa
+     * @throws {PropertyWriteError} Cuando ocurre un error durante el proceso de escritura
+     * @throws {PropertyNotFoundError}
+     * @throws {RepeatedPropertyError}
+     */
+    async writeValue(property : string, value : number) : Promise<void> {
+        const propertyRepository = await this.#findPropertyRepository(property)
+        return propertyRepository.writeValue(property, value)
+            .catch(cause => {
+                throw new PropertyWriteError(property, value, cause)
+            })
     }
 
-    writeValues(valuesMap : Map<string, number>) : Promise<void> {
-        return this.repositories[0].writeValues(valuesMap)
+    /**
+     * Comprueba si una propiedad existe y devuelve la posición en la lista de repositorios
+     * @param property El nombre de la propiedad que se desea comprobar
+     * @returns Una promesa de un numero que se resuelve cuando se encuentra la posicion de la propiedad
+     * @throws {PropertyNotFoundError} Cuando no se ha podido encontrar la propiedad
+     * @throws {RepeatedPropertyError} Cuando se encuentran multiples propiedades repetidas en distintos repositorios
+     */
+    async #findPropertyRepository(property : string) : Promise<PlcDataRepository> {
+        const dataOrErrorArray = await this.#getRepositoriesPromisesOfRead(property)
+        const validDataArray = await this.#filterValidValues(dataOrErrorArray)
+        const repositoryIndex = await this.#resolvePropertyExist(property, validDataArray, dataOrErrorArray)
+        return this.#repositories[repositoryIndex]
+    }
+    
+    async #resolvePropertyExist (property : string, validDataArray : number[], dataOrErrorArray : Array<number | Error>) : Promise<number> {
+        switch (validDataArray.length) {
+            case 0: 
+                throw new PropertyNotFoundError(property)
+            case 1:
+                return await this.#getPropertyPosition(dataOrErrorArray)
+            default:
+                throw new RepeatedPropertyError(property, validDataArray.length)
+        }
     }
 
+    async #getPropertyPosition(dataOrErrorArray : Array<number | Error>) : Promise<number> {
+        return dataOrErrorArray.findIndex(dataOrError => !(dataOrError instanceof Error))
+    }
+
+    /**
+     * Comprueba si las propiedades existen y no se encuentran en multiples dispositivos 
+     * antes de intentar escribir en ellos
+     * @param valuesMap Un mapa que asocia nombres de propiedades con su valor
+     * @returns Una promesa que se resuelve con una lista de errores del tipo PropertyError
+     */
+    async writeValues(valuesMap : Map<string, number>) : Promise<PropertyError[]> {
+        const internalWriteValue = async ([property, value] : [string, number]) : Promise<PropertyError | void> => {
+            return await this.writeValue(property, value)
+                .catch(cause => cause)
+        }
+        const writePromises = Array.from(valuesMap).map(internalWriteValue)
+        const writeResults = await Promise.all(writePromises)
+
+        return writeResults.filter(result => typeof result !== 'undefined')
+    }
 }
-
+    

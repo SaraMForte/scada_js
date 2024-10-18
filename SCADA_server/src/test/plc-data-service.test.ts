@@ -1,19 +1,20 @@
-import {describe, expect, test} from '@jest/globals';
+import {beforeAll, beforeEach, describe, expect, test} from '@jest/globals'
 
 import PlcDataService, { PlcDatasResoult } from '../main/application/plc-data-service';
-import PlcDataRepository from '../main/application/plc-data-repository';
+import PlcDataRepository from '../main/application/plc-data-repository'
+import { PropertyError, PropertyNotFoundError, PropertyWriteError, RepeatedPropertyError } from '../main/application/errors';
 
-const DUMMY_DATA_1 = {
+const DUMMY_DATA_OBJ_1 = {
     A : 5,
     B : 8,
-    C : 2,
+    C : 34,
     D : 21,
     E : 24
 }
-const DUMMY_DATA_2 = {
+const DUMMY_DATA_OBJ_2 = {
     F : 77,
     I : 23,
-    W : 9
+    W : 36
 }
 
 class DummyPlcDataRepository implements PlcDataRepository {
@@ -37,134 +38,280 @@ class DummyPlcDataRepository implements PlcDataRepository {
         return valuesMap
     }
     async writeValue(property: string, value: number): Promise<void> {
-        if(!(property in this.dummyData)) {
-            throw new TypeError('Property value not be write')
-        }
         this.dummyData[property] = value
-
         return
     }
     async writeValues(valuesMap: Map<string, number>): Promise<void> {
-        for(const property in valuesMap) {
-            if (!(property in this.dummyData)) {
-                throw new TypeError('Property value not be write')
-            }
-        }
         for (const [property, value] of valuesMap) {
             this.dummyData[property] = value
         }
-
-        return 
     }
-    
 }
-const dummyRepositoryConnectionError: PlcDataRepository = {
-    readValue: jest.fn().mockRejectedValue(new Error('Function not implemented.')),
-    readValues: jest.fn().mockResolvedValue(new ReferenceError('failed to read values')),
-    writeValue: jest.fn().mockRejectedValue(new Error('Function not implemented.')),
-    writeValues: jest.fn().mockRejectedValue(new Error('Function not implemented.'))
-}        
 
+class DummyPlcErrorRepository implements PlcDataRepository{
+    
+    readValue = jest.fn().mockRejectedValue(new PropertyNotFoundError('propertyName'))
+
+    readValues = jest.fn().mockRejectedValue(new PropertyNotFoundError('propertyName'))
+        
+    writeValue = jest.fn().mockRejectedValue(new Error('Method not implemented.'))
+
+    writeValues = jest.fn().mockRejectedValue(new Error('Method not implemented.'))
+}
+
+class DummyErrorWriteRepository implements PlcDataRepository {
+    readValue = jest.fn().mockResolvedValue(25)
+    
+    readValues = jest.fn().mockRejectedValue(new Error('Method not implemented.'))
+    
+    writeValue = jest.fn().mockRejectedValue(new PropertyWriteError('propertyName', 20))
+
+    writeValues = jest.fn().mockRejectedValue(new Error('Method not implemented.'))
+}
+//-----------------------------------------------------{Creation}-------------------------------------------------------
 describe('Creation', () => {
-    test('with one PlcDataRepository', () => {
-        const plcDataServiceData = new PlcDataService(new DummyPlcDataRepository(DUMMY_DATA_2))
+    let dummyPlcData1Repository : DummyPlcDataRepository
+    let dummyPlcData2Repository : DummyPlcDataRepository
+    
+    beforeAll(() => {
+        dummyPlcData1Repository = new DummyPlcDataRepository({...DUMMY_DATA_OBJ_1})
+        dummyPlcData2Repository = new DummyPlcDataRepository({...DUMMY_DATA_OBJ_2})
     })
-    test('with multiple PlcDataRepository', () => {
-        const plcDataServiceData = new PlcDataService(new DummyPlcDataRepository(DUMMY_DATA_1), new DummyPlcDataRepository(DUMMY_DATA_2))
+    
+    test('GIVEN one PlcDataRepository WHEN create service THEN is created', () => {
+        const plcDataService = new PlcDataService(dummyPlcData2Repository)
+
+        expect(plcDataService).toBeDefined()
+    })
+    test('GIVEN multiple PlcDataRepository WHEN create service THEN is created', () => {
+        const plcDataService = new PlcDataService(dummyPlcData1Repository, dummyPlcData2Repository)
+
+        expect(plcDataService).toBeDefined()
     })
 })
-
+//-----------------------------------------------------{ReadValue}------------------------------------------------------
 describe('Readvalue', () => {
-    test('from one PlcDataService with one PLCDataRepository ', async () => {
-        const plcDataService = new PlcDataService(new DummyPlcDataRepository(DUMMY_DATA_1))
-        expect(await plcDataService.readValue('A')).toBe(5)
-        expect(await plcDataService.readValue('C')).toBe(2)
-        
-        await expect(plcDataService.readValue('Z')).rejects.toThrow(new ReferenceError(`value of property Z is not been reached`))    
+    let dummyPlcData1Repository : DummyPlcDataRepository
+    let dummyPlcData2Repository : DummyPlcDataRepository
 
+    beforeAll(() => {
+        dummyPlcData1Repository = new DummyPlcDataRepository({...DUMMY_DATA_OBJ_1})
+        dummyPlcData2Repository = new DummyPlcDataRepository({...DUMMY_DATA_OBJ_2})
     })
-    test('from one PlcDataService with multiple PlcDataRepository ', async () => {
-        const plcDataService = new PlcDataService(new DummyPlcDataRepository(DUMMY_DATA_1), new DummyPlcDataRepository(DUMMY_DATA_2))
+
+    test('GIVEN properties with values WHEN read an existing property THEN returns property value', async () => {
+        const plcDataService = new PlcDataService(dummyPlcData1Repository, dummyPlcData2Repository)
 
         expect(await plcDataService.readValue('A')).toBe(5)
-        expect(await plcDataService.readValue('C')).toBe(2)
+        expect(await plcDataService.readValue('C')).toBe(34)
         expect(await plcDataService.readValue('F')).toBe(77)
-        expect(await plcDataService.readValue('W')).toBe(9)
+        expect(await plcDataService.readValue('W')).toBe(36)
+    })
+    
+    test('GIVEN properties with values WHEN read an non-existing property THEN throws error', async () => {
+        const plcDataService = new PlcDataService(dummyPlcData1Repository, new DummyPlcDataRepository({}))
         
-        await expect(plcDataService.readValue('Z')).rejects.toThrow(new ReferenceError(`value of property Z is not been reached`))        
+        await expect(plcDataService.readValue('Z')).rejects.toThrow(PropertyNotFoundError)
+    })
+
+    test('GIVEN properties with values WHEN read a property duplicated across multiple Plc THEN throws error', async () => {
+        const plcDataService = new PlcDataService(dummyPlcData1Repository, dummyPlcData1Repository)
+
+        await expect(plcDataService.readValue('A')).rejects.toThrow(RepeatedPropertyError)
     })
 }) 
-
+//-----------------------------------------------------{ReadValues}-----------------------------------------------------
 describe('ReadValues', () => {
-    test('from one PlcDataService using one PLCDataRepository ', async () => {
-        const plcDataService = new PlcDataService(new DummyPlcDataRepository(DUMMY_DATA_1))
-        const resoultErrorDummy2 = Object.entries(DUMMY_DATA_2).map((data) => {
-            return new ReferenceError(`value of property ${data[0]} is not been reached`)
-        })
-        const valuesDummy1 = {data : new Map(Object.entries(DUMMY_DATA_1)), error : []}
-        const valuesErrorDummy2 : PlcDatasResoult = {data : new Map(), error : resoultErrorDummy2}
+    const DUMMY_DATA_ARRAY_1 = Object.entries(DUMMY_DATA_OBJ_1)
+    const DUMMY_DATA_ARRAY_2 = Object.entries(DUMMY_DATA_OBJ_2)
+    const DUMMY_DATA_MAP = new Map([...DUMMY_DATA_ARRAY_1, ...DUMMY_DATA_ARRAY_2])
 
-        expect(await plcDataService.readValues()).toEqual(valuesDummy1)
-        expect(await plcDataService.readValues(Object.keys(DUMMY_DATA_1))).toEqual(valuesDummy1)
-        expect(await plcDataService.readValues(Object.keys(DUMMY_DATA_2))).toEqual(valuesErrorDummy2)
+    let dummyPlcData1Repository : DummyPlcDataRepository
+    let dummyPlcData2Repository : DummyPlcDataRepository
+
+    beforeAll(() => {
+        dummyPlcData1Repository = new DummyPlcDataRepository({...DUMMY_DATA_OBJ_1})
+        dummyPlcData2Repository = new DummyPlcDataRepository({...DUMMY_DATA_OBJ_2})
+    })
+    
+    test('GIVEN repository with empty data WHEN reading all properties THEN return no data with no errors', async () => {
+        const plcDataService = new PlcDataService()
+        
+        const dummyValues : PlcDatasResoult = { data: new Map(), error: [] }
+        expect(await plcDataService.readValues()).toEqual(dummyValues)
+    })
+    
+    test('GIVEN repositories with data WHEN reading all properties THEN return data with no errors', async () => {
+        const plcDataService = new PlcDataService(
+            dummyPlcData1Repository,
+            dummyPlcData2Repository
+        )
+        
+        const dummyValues3 : PlcDatasResoult= {data: DUMMY_DATA_MAP, error: []}
+        expect(await plcDataService.readValues()).toEqual(dummyValues3)
     })
 
-    test('with connection error from one PlcDataService using one PlcDataRepository', async () => {
-        const plcDataService = new PlcDataService(dummyRepositoryConnectionError)
-        const valuesErrorDummy : PlcDatasResoult = {data : new Map(), error : [new Error('failed to read values')]}
-        expect(await plcDataService.readValues()).toEqual(valuesErrorDummy)
+    
+    test('GIVEN repositories with data WHEN reading specific data THEN return data with no errors', async () => {
+        const plcDataService = new PlcDataService(
+            dummyPlcData1Repository,
+            dummyPlcData2Repository
+        )
+        
+        const dummyValues1 = {data : new Map(DUMMY_DATA_ARRAY_1), error : []}
+        const dummyValues2 = {data : new Map(DUMMY_DATA_ARRAY_2), error : []}
+        expect(await plcDataService.readValues(Object.keys(DUMMY_DATA_OBJ_1))).toEqual(dummyValues1)
+        expect(await plcDataService.readValues(Object.keys(DUMMY_DATA_OBJ_2))).toEqual(dummyValues2)
+    })
+    
+    test('GIVEN repositories with error to read WHEN attempting to read PLCs THEN returns no data with errors', async () => {
+        const plcDataService = new PlcDataService(new DummyPlcErrorRepository(), new DummyPlcErrorRepository())
+        
+        const dummyValues : PlcDatasResoult = {data : new Map(), error : [new Error(), new Error()]}
+        
+        const expectReadValues = await plcDataService.readValues()
+        expect(expectReadValues.data).toEqual(dummyValues.data)
+        expect(expectReadValues.error.length).toBe(dummyValues.error.length)
+        expectReadValues.error.forEach(err => expect(err).toBeInstanceOf(Error))
     })
 
-    test('from one PlcDataService using one PlcDataRepository with empty data', async () => {
-        const plcDataService = new PlcDataService(new DummyPlcDataRepository({}))
-        const emptyResult : PlcDatasResoult = { data: new Map(), error: [] }
-
-        expect(await plcDataService.readValues()).toEqual(emptyResult)
+    test('GIVEN repositories with data WHEN reading a non-existing specific properties THEN returns empty data with errors', async () => {
+        const plcDataService = new PlcDataService(
+            dummyPlcData1Repository,
+            dummyPlcData1Repository
+        )
+        
+        const dummyErrors2 = DUMMY_DATA_ARRAY_2.map(() => new ReferenceError())
+        const dummyValues2 : PlcDatasResoult = {data : new Map(), error : dummyErrors2}
+        
+        const expectReadValues = await plcDataService.readValues(Object.keys(DUMMY_DATA_OBJ_2))
+        expect(expectReadValues.data).toEqual(dummyValues2.data)
+        expect(expectReadValues.error.length).toBe(dummyValues2.error.length)
+        expectReadValues.error.forEach(err => expect(err).toBeInstanceOf(Error))
     })
 
-    test('from one PlcDataService using multiple PlcDataRepository ', async () => {
-        const plcDataService = new PlcDataService(new DummyPlcDataRepository(DUMMY_DATA_1), new DummyPlcDataRepository(DUMMY_DATA_2))
-        const valuesDummy1 = Object.entries(DUMMY_DATA_1)
-        const valuesDummy2 = Object.entries(DUMMY_DATA_2)
-        const valuesResoultDummy1 = {data : new Map(Object.entries(DUMMY_DATA_1)), error : []}
-        const valuesResoultDummy2 = {data : new Map(Object.entries(DUMMY_DATA_2)), error : []}
-        const valuesMap = new Map([...valuesDummy1, ...valuesDummy2])
-        const valuesResoultDummy : PlcDatasResoult= {data: valuesMap, error: []}
+    
+    test('GIVEN repositories with data and error to read WHEN reading all properties THEN return data with errors',async () => {
+        const plcDataService = new PlcDataService(
+            new DummyPlcErrorRepository(),
+            dummyPlcData2Repository
+        )
+        
+        const expectReadValues = await plcDataService.readValues()
+        expect(expectReadValues.error.length).toBeGreaterThan(0)
+        expect(expectReadValues.data.size).toBeGreaterThan(0)
+    })
+    
+    test('GIVEN repositories with duplicated data in multiple PLCs WHEN reading all properties THEN return data and errors', async () => {
+        const plcDataService = new PlcDataService(
+            dummyPlcData1Repository,
+            dummyPlcData1Repository
+        )
+        
+        const dummyErrors : Error[] = DUMMY_DATA_ARRAY_1.map(() => new Error())
+        const dummyValues = {data : new Map(DUMMY_DATA_ARRAY_1), error : dummyErrors}
+        
+        const expectReadValues = await plcDataService.readValues()
+        expect(expectReadValues.data).toEqual(dummyValues.data)
+        expectReadValues.error.forEach(err => expect(err).toEqual(expect.any(Error)))
+    })
+})
+//-----------------------------------------------------{WriteValues}----------------------------------------------------
+describe('writeValue', () => {
+    let dummyPlcData1Repository : DummyPlcDataRepository
+    let dummyPlcData2Repository : DummyPlcDataRepository
 
-        expect(await plcDataService.readValues()).toEqual(valuesResoultDummy)
-        expect(await plcDataService.readValues(Object.keys(DUMMY_DATA_1))).toEqual(valuesResoultDummy1)
-        expect(await plcDataService.readValues(Object.keys(DUMMY_DATA_2))).toEqual(valuesResoultDummy2)
+    beforeEach(() => {
+        dummyPlcData1Repository = new DummyPlcDataRepository({...DUMMY_DATA_OBJ_1})
+        dummyPlcData2Repository = new DummyPlcDataRepository({...DUMMY_DATA_OBJ_2})
     })
 
-    test('with connection error from one PLCDataService using multiple PlcDataRepository',async () => {
-        const plcDataService = new PlcDataService(dummyRepositoryConnectionError, new DummyPlcDataRepository(DUMMY_DATA_2))
-        const valuesDummy2 = Object.entries(DUMMY_DATA_2)
+    test('GIVEN repositories with data WHEN writing existing property THEN properties updated correctly', async () => {
+        const plcDataService = new PlcDataService(dummyPlcData1Repository, dummyPlcData2Repository)
 
-        const valuesErrorDummy : PlcDatasResoult = {data : new Map(valuesDummy2), error : [new Error('failed to read values')]}
-        expect(await plcDataService.readValues()).toEqual(valuesErrorDummy)
+        await plcDataService.writeValue('A', 20)
+        expect(dummyPlcData1Repository.dummyData['A']).toBe(20)
+        expect(dummyPlcData2Repository.dummyData['A']).not.toBe(20)
+
+        await plcDataService.writeValue('W', 30)
+        expect(dummyPlcData2Repository.dummyData['W']).toBe(30)
+        expect(dummyPlcData1Repository.dummyData['W']).not.toBe(30)
+    })
+
+    test('GIVEN repositories with data WHEN writing non-existing property THEN throws error', async () => {
+        const plcDataService = new PlcDataService(dummyPlcData1Repository, dummyPlcData2Repository)
+
+        await expect(plcDataService.writeValue('Z', 40)).rejects.toThrow(PropertyNotFoundError)
+    })
+
+    test('GIVEN repositories with duplicated data WHEN writing existing property THEN throws error', async () => {
+        const plcDataService = new PlcDataService(dummyPlcData1Repository, dummyPlcData1Repository)
+
+        await expect(plcDataService.writeValue('A', 50)).rejects.toThrow(Error)
+        await expect(plcDataService.writeValue('C', 50)).rejects.toThrow(Error)
+    })
+
+    test('GIVEN repositories with data WHEN fail to write properties THEN throws error',async () => {
+        const plcDataService = new PlcDataService(new DummyErrorWriteRepository())
+
+        await expect(plcDataService.writeValue('A', 60)).rejects.toThrow(PropertyWriteError)
     })
 })
 
-    // test('of write value', () => {
-    //     const plcDataService = new PlcDataService(new DummyPlcDataRepository(DUMMY_DATA_1))
-    //     plcDataService.writeValue('A', 20)
-    //     .then(res => {
-    //         expect(res).toBeUndefined()
-    //     })
-    //     plcDataService.writeValue('F', 13)
-    //     .catch(err => {
-    //         expect(err).toEqual(new TypeError('Property value not be write'))
-    //     })
-    // })
+//-----------------------------------------------------{WriteValue}-----------------------------------------------------
+describe('writeValues', () => {
+    const DUMMY_DATA_ARRAY_1 = Object.entries(DUMMY_DATA_OBJ_1)
+    const DUMMY_DATA_ARRAY_2 = Object.entries(DUMMY_DATA_OBJ_2)
+    
+    let dummyDataMap1 : Map<string, number>
+    let dummyDataMap2 : Map<string, number> 
+    let dummyPlcData1Repository : DummyPlcDataRepository
+    let dummyPlcData2Repository : DummyPlcDataRepository
+    
+    beforeEach(() => {
+        dummyDataMap1 = new Map(DUMMY_DATA_ARRAY_1)
+        dummyDataMap2 = new Map(DUMMY_DATA_ARRAY_2)
+        dummyPlcData1Repository = new DummyPlcDataRepository({...DUMMY_DATA_OBJ_1})
+        dummyPlcData2Repository = new DummyPlcDataRepository({...DUMMY_DATA_OBJ_2})
+    })
 
-    // test('of write values', () => {
-    //     const plcDataService = new PlcDataService(new DummyPlcDataRepository(DUMMY_DATA_1))
-    //     plcDataService.writeValues(new Map([['A', 20], ['B', 14], ['D', 1]]))
-    //     .then((res) => {
-    //         expect(res).toBeUndefined()
-    //         })
-    //     plcDataService.writeValues(new Map([['A', 20], ['F', 14], ['D', 1]]))
-    //     .catch((err) => {
-    //         expect(err).toEqual(new TypeError('Property value not be write'))
-    //         })
-    // })
+    test('GIVEN repositories with mapped data WHEN writing existing properties THEN properties are updated correctly',
+    async () => {
+        const plcDataService = new PlcDataService(dummyPlcData1Repository, dummyPlcData2Repository)
+
+        const dummyAddData1Map = new Map([['A', 13],['B', 14],['C', 15]])
+        const dummyAddData2Map = new Map([['F', 10],['I', 11]])
+        const dummyDataMap = new Map([...dummyAddData1Map, ...dummyAddData2Map])
+
+        dummyAddData1Map.forEach((value, property) => {
+            if(dummyDataMap1.has(property)) {
+                dummyDataMap1.set(property, value) 
+            } 
+        })
+        dummyAddData2Map.forEach((value, property) => {
+            if(dummyDataMap2.has(property)) {
+                dummyDataMap2.set(property, value) 
+            } 
+        })
+
+        await plcDataService.writeValues(dummyDataMap)
+        const dummyValues1Map = new Map(Object.entries(dummyPlcData1Repository.dummyData))
+        const dummyValues2Map = new Map(Object.entries(dummyPlcData2Repository.dummyData))
+        
+        expect(dummyValues1Map).toEqual(dummyDataMap1)
+        expect(dummyValues2Map).toEqual(dummyDataMap2)
+    })
+
+    test('GIVEN repositories with mapped data WHEN writing exisiting properties THEN properties return errors',
+    async () => {
+        const plcDataService = new PlcDataService(dummyPlcData1Repository, dummyPlcData2Repository)
+
+        const dummyAddData1Map = new Map([['A', 13],['B', 14],['C', 15]])
+        const dummyAddData2Map = new Map([['F', 10],['I', 11], ['Z', 16], ['X', 17]])
+        const dummyDataMap = new Map([...dummyAddData1Map, ...dummyAddData2Map])
+
+        const writeResults = await plcDataService.writeValues(dummyDataMap)
+        expect(writeResults.length).toBe(2)
+        writeResults.forEach(error => expect(error).toEqual(expect.any(PropertyError)))
+    })
+})
