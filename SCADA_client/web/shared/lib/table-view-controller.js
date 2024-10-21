@@ -36,6 +36,7 @@ class TableViewController {
     }
     refresh() {
         return __awaiter(this, void 0, void 0, function* () {
+            //Realizar la implementación de URL
             __classPrivateFieldGet(this, _TableViewController_tableManager, "f").refreshTable(datosProduccion);
         });
     }

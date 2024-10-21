@@ -36,3 +36,12 @@ export class PropertyWriteError extends PropertyError {
         this.value = value
     }
 }
+
+export class RepositoryNotFoundError extends Error {
+    repositoryName : string
+
+    constructor(repositoryName : string, cause? : Error) {
+        super(`Repository ${repositoryName} is not been reached`)
+        this.repositoryName = repositoryName
+    }
+}

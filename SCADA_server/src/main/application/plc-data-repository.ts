@@ -10,7 +10,7 @@ export default interface PlcDataRepository {
      * Lee el valor del propiedad dada
      * @param property nombre del valor de la propiedad a leer
      * @returns Una promesa que resuelva con el valor numerico de la propiedad
-     * @throws {PropertyNotFoundError} Cuando el valor de la propiedad no ha sido encotnrado
+     * @throws {PropertyNotFoundError} Cuando el valor de la propiedad no ha sido encontrado
      */
     readValue(property : string) : Promise<number>
     
