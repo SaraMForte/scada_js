@@ -1,8 +1,7 @@
-import {beforeAll, beforeEach, describe, expect, test} from '@jest/globals'
-
-import PlcDataService, { PlcDatasResoult } from '../main/application/plc-data-service';
-import PlcDataRepository from '../main/application/plc-data-repository'
-import { PropertyError, PropertyNotFoundError, PropertyWriteError, RepeatedPropertyError } from '../main/application/errors';
+import { beforeAll, beforeEach, describe, expect, test } from "vitest"
+import PlcDataService, { PlcDatasResoult } from "../../main/application/plc-data-service"
+import { PropertyError, PropertyNotFoundError, PropertyWriteError, RepeatedPropertyError } from "../../main/application/errors"
+import PlcDataRepository from "../../main/application/plc-data-repository"
 
 const DUMMY_DATA_OBJ_1 = {
     A : 5,
@@ -50,23 +49,38 @@ class DummyPlcDataRepository implements PlcDataRepository {
 
 class DummyPlcErrorRepository implements PlcDataRepository{
     
-    readValue = jest.fn().mockRejectedValue(new PropertyNotFoundError('propertyName'))
+    async readValue(property: string): Promise<number> {
+        return new Promise(() => {throw new PropertyNotFoundError('propertyName')})
+    }
 
-    readValues = jest.fn().mockRejectedValue(new PropertyNotFoundError('propertyName'))
-        
-    writeValue = jest.fn().mockRejectedValue(new Error('Method not implemented.'))
+    async readValues(): Promise<Map<string, number>> {
+        return new Promise(() => {throw new PropertyNotFoundError('propertyName')})
+    }
 
-    writeValues = jest.fn().mockRejectedValue(new Error('Method not implemented.'))
+    writeValue(property: string, value: number): Promise<void> {
+        throw new Error('Method not implemented.')
+    }
+
+    writeValues(valuesMap: Map<string, number>): Promise<void> {
+        throw new Error('Method not implemented.')
+    }
 }
 
 class DummyErrorWriteRepository implements PlcDataRepository {
-    readValue = jest.fn().mockResolvedValue(25)
+    async readValue(property: string): Promise<number> {
+        return 25
+    }
     
-    readValues = jest.fn().mockRejectedValue(new Error('Method not implemented.'))
-    
-    writeValue = jest.fn().mockRejectedValue(new PropertyWriteError('propertyName', 20))
+    async writeValue(property: string, value: number): Promise<void> {
+        return new Promise(() => {throw new PropertyWriteError('propertyName', 20)})
+    }
 
-    writeValues = jest.fn().mockRejectedValue(new Error('Method not implemented.'))
+    readValues(): Promise<Map<string, number>> {
+        throw new Error('Method not implemented.');
+    }
+    writeValues(valuesMap: Map<string, number>): Promise<void> {
+        throw new Error('Method not implemented.');
+    }
 }
 //-----------------------------------------------------{Creation}-------------------------------------------------------
 describe('Creation', () => {

@@ -1,8 +1,7 @@
-import { describe, expect, test } from "@jest/globals"
-
-import NamedPlcDataRepository from "../main/application/named-plc-data-repository"
-import NamedPlcDataService, { PlcDatasResoult } from "../main/application/named-plc-data-service"
-import { PropertyError, PropertyNotFoundError, PropertyWriteError, RepositoryNotFoundError } from "../main/application/errors"
+import NamedPlcDataRepository from "../../main/application/named-plc-data-repository"
+import NamedPlcDataService, { PlcDatasResoult } from "../../main/application/named-plc-data-service"
+import { PropertyError, PropertyNotFoundError, PropertyWriteError, RepositoryNotFoundError } from "../../main/application/errors"
+import { beforeEach, describe, expect, test } from "vitest"
 
 const DUMMY_DATA_1 = {
     P : 13,
@@ -56,12 +55,20 @@ class DummyNamedPlcErrorRepository implements NamedPlcDataRepository {
         this.plcName = plcName
         this.dummyData = dummyData
     }
-
-    readValue = jest.fn().mockRejectedValue(new PropertyNotFoundError('propertyName'))
     
-    readValues = jest.fn().mockRejectedValue(new PropertyNotFoundError('propertyName'))
+    readValue(property: string): Promise<number> {
+        return new Promise(() => {throw new PropertyNotFoundError('propertyName')})
+    }
 
-    writeValue = jest.fn().mockRejectedValue(new PropertyWriteError('propertyName', 0))
+    readValues(): Promise<Map<string, number>> {
+        return new Promise(() => {throw new PropertyNotFoundError('propertyName')})
+    }
+
+    writeValue(property: string, value: number): Promise<void> {
+        return new Promise(() => {throw new PropertyWriteError('propertyName', 0)})
+    }
+
+    // writeValue = jest.fn().mockRejectedValue(new PropertyWriteError('propertyName', 0))
 
     writeValues(valuesMap: Map<string, number>): Promise<void> {
         throw new Error("Method not implemented.")

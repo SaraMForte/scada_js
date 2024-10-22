@@ -2,10 +2,12 @@
  * Se establece el endpoint para la lectura de datos de Modbus TCP
  * Devuelve un JSON
  */
+import { Socket } from "node:net";
 import PlcDataService from "../application/plc-data-service";
 import ModbusPlcDataRepository from "./modbus-plc-data-repository";
 
 import  Express  from "express";
+import { ModbusTCPClient } from "jsmodbus";
 
 const REGISTERSNAMES = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']
 const INDEX_BY_COLUM = Object.fromEntries(REGISTERSNAMES.map((key, index) => [key, index]))
@@ -13,9 +15,11 @@ const INDEX_BY_COLUM = Object.fromEntries(REGISTERSNAMES.map((key, index) => [ke
 const modbusPlcDataRouter = Express.Router()
 
 const service = new PlcDataService(new ModbusPlcDataRepository({
-    slaveID: 1,
     host: 'localhost',
-    port: 502
+    port: 502,
+    socket: new Socket(),
+    client: new ModbusTCPClient(new Socket, 1)
+
 }))
 
 modbusPlcDataRouter.get('/modbus-read-values', (req, res) => {

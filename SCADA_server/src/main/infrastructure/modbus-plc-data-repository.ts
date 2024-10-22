@@ -1,10 +1,18 @@
-import Modbus, { ModbusTCPClient } from 'jsmodbus'
-import net, { Socket } from 'node:net'
+import { ModbusTCPClient } from 'jsmodbus'
+import { Socket } from 'node:net'
 
 import PlcDataRepository from "../application/plc-data-repository";
 
+
 const REGISTERSNAMES = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']
 const INDEX_BY_COLUM = Object.fromEntries(REGISTERSNAMES.map((key, index) => [key, index]))
+
+export type ModbusPlcDataRepositoryConstructor = {
+    host : string,
+    port : number, 
+    socket : Socket,
+    client : ModbusTCPClient
+}
 
 /**
  * Conexion y Lectura mediante Modbus TCP con el PLC
@@ -17,9 +25,9 @@ export default class ModbusPlcDataRepository implements PlcDataRepository {
     private readonly client : ModbusTCPClient
     private readonly options : {host: string , port : number}
 
-    constructor({slaveID, host, port} : {slaveID : number, host : string, port : number}) {
-        this.socket = new Socket()
-        this.client = new ModbusTCPClient(this.socket, slaveID)
+    constructor({host, port, socket, client} : ModbusPlcDataRepositoryConstructor) {
+        this.socket = socket
+        this.client = client
         this.options = {'host' : host, 'port' : port}
     }
 
@@ -31,30 +39,28 @@ export default class ModbusPlcDataRepository implements PlcDataRepository {
     readValue(property: string): Promise<number> {
         return new Promise((resolve, reject) => {
             const listernerCallback = {
-                connectListener : () => {},
-                errorListener : (err : Error) => {}
+                connectListener : () => {
+                    const propertyNumber = INDEX_BY_COLUM[property]
+                    this.client.readHoldingRegisters(propertyNumber, 1)
+                    .then(response => {
+                        const value = response.response.body.values
+    
+                        this.socket.removeListener('error', listernerCallback.errorListener)
+                        resolve(Number(value))
+                    })
+                    .catch(error => {
+                        reject(error)
+                    })
+                    .finally(() => {
+                        this.socket.end()
+                    })
+                },
+                errorListener : (err : Error) => {
+                    this.socket.removeListener('connect', listernerCallback.connectListener)
+                    reject(err)
+                }
             }
-            listernerCallback.connectListener = () => {
-                const propertyNumber = INDEX_BY_COLUM[property]
-                this.client.readHoldingRegisters(propertyNumber, 1)
-                .then(response => {
-                    const value = response.response.body.values
 
-                    this.socket.removeListener('error', listernerCallback.errorListener)
-                    resolve(Number(value))
-                })
-                .catch(error => {
-                    reject(error)
-                })
-                .finally(() => {
-                    this.socket.end()
-                })
-            }
-
-            listernerCallback.errorListener = (err : Error) => {
-                this.socket.removeListener('connect', listernerCallback.connectListener)
-                reject(err)
-            }
             // Leer registros cuando la conexión esté establecida
             this.socket.once('connect', listernerCallback.connectListener)
             this.socket.once('error', listernerCallback.errorListener)
