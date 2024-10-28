@@ -4,6 +4,7 @@ export class PropertyError extends Error {
     constructor(propertyName : string, message : string, cause? : Error) {
         super(message, {cause})
         this.propertyName = propertyName
+        this.name = this.constructor.name
     }
 }
 

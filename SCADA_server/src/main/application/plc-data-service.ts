@@ -32,8 +32,8 @@ export default class PlcDataService {
 
     async #getRepositoriesPromisesOfRead (property : string) {
         const repositoriesPromises = this.#repositories
-        .map(repository => repository.readValue(property)
-            .catch<Error>(err => err))
+            .map(repository => repository.readValue(property)
+                .catch<Error>(err => err))
         return await Promise.all(repositoriesPromises)
     }
 
@@ -154,6 +154,10 @@ export default class PlcDataService {
         }
     }
 
+    buildMotiveError() {
+
+    }
+
     async #getPropertyPosition(dataOrErrorArray : Array<number | Error>) : Promise<number> {
         return dataOrErrorArray.findIndex(dataOrError => !(dataOrError instanceof Error))
     }
@@ -171,8 +175,21 @@ export default class PlcDataService {
         }
         const writePromises = Array.from(valuesMap).map(internalWriteValue)
         const writeResults = await Promise.all(writePromises)
-
         return writeResults.filter(result => typeof result !== 'undefined')
+    }
+
+    async writeValues2(valuesMap : Map<string, number>) : Promise<PropertyError[]> {
+        const IndexPropertyMap = new Map()
+        const promises = Array.from(valuesMap.entries()).map(async ([key, value]) => {
+            const result = await this.#findPropertyRepository(key)
+            return [key, result]
+        })
+        const results = await Promise.all(promises)
+        results.forEach(([key, result]) => {
+            IndexPropertyMap.set(key, result)
+        })
+        console.log(IndexPropertyMap)
+        return []
     }
 }
     
