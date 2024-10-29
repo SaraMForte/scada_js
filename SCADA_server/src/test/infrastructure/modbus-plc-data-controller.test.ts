@@ -133,7 +133,7 @@ describe('Controller Modbus WriteValue', async () => {
                 value : 99
             })
         expect(response.status).toBe(500)
-        expect(response.body).toEqual(mapErrorToResponseError(new Error('Property "Z" not found in Plc')))
+        expect(response.body).toEqual(mapErrorToResponseError(new Error('Property Z not found in Plc')))
         service.readValues.reset()
     })
 

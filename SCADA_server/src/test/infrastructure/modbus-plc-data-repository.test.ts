@@ -6,36 +6,38 @@ import ModbusPlcDataRepository from '../../main/infrastructure/modbus-plc-data-r
 import ReadHoldingRegistersRequestBody from 'jsmodbus/dist/request/read-holding-registers'
 import { IUserRequestResolve } from 'jsmodbus/dist/user-request'
 import { WriteSingleRegisterRequestBody } from 'jsmodbus/dist/request'
+import { StandloneModbusClientPool } from '../../main/infrastructure/modbus-client-pool'
+import { StandloneModbusClient } from '../../main/infrastructure/standlone-modbus-client'
+
+function createStandloneModbusClientFactory(
+    configure : (
+        standloneModbusClient : sinon.SinonStubbedInstance<StandloneModbusClient>, 
+        mockMap : Map<string, (...args : any[]) => void>
+    ) => void
+) {
+    return () => {
+        const standloneModbusClient = sinon.createStubInstance(StandloneModbusClient)
+        const mockMap = new Map()
+        standloneModbusClient.once.callsFake((eventName : string, callback: (...args : any[]) => void) => {
+            mockMap.set(eventName, callback)
+            return standloneModbusClient
+        })
+        configure(standloneModbusClient, mockMap)
+        return standloneModbusClient
+    }
+}
 
 describe('ReadValue Modbus', () => {
-    let socketMock : sinon.SinonStubbedInstance<Socket>
-    let clientMock : sinon.SinonStubbedInstance<ModbusTCPClient>
-    let mockMap : Map<string, (...args : []) => void>
-
-    beforeEach(() => {
-        clientMock = sinon.createStubInstance(ModbusTCPClient)
-        socketMock = sinon.createStubInstance(Socket)
-        mockMap = new Map()
-        
-        socketMock.once.callsFake((event : string, listener : () => void) => {
-            mockMap.set(event, listener)
-            return socketMock
-        })
-    })
-
     test('GIVEN repository WHEN error connecting to plc THEN twrow error', async () => {
-        socketMock.connect.callsFake(() => {
-            const errorMock : (err : Error) => void = mockMap.get('error')!
-            errorMock(new Error())
-            return socketMock
-        })
-
-        const repository = new ModbusPlcDataRepository({
-            host: 'localhost',
-            port:502,
-            socket: socketMock,
-            client: clientMock
-        })
+        const repository = new ModbusPlcDataRepository(new StandloneModbusClientPool(
+            createStandloneModbusClientFactory((standloneModbusClientMock, mockMap) => {
+                standloneModbusClientMock.connect.callsFake(() => {
+                    const errorMock : (err : Error) => void = mockMap.get('error')!
+                    errorMock(new Error())
+                    return standloneModbusClientMock
+                })
+            }), 1
+        ))
 
         await expect(repository.readValue('A')).rejects.toThrow(Error)
     })
@@ -49,68 +51,46 @@ describe('ReadValue Modbus', () => {
             }
         } as IUserRequestResolve<ModbusTCPRequest<ReadHoldingRegistersRequestBody>>
 
-        clientMock.readHoldingRegisters.resolves(dummyResponse)
-        socketMock.connect.callsFake(() => {
-            mockMap.get('connect')!()
-            return socketMock
-        })
-
-        const repository = new ModbusPlcDataRepository({
-            host: 'localhost',
-            port:502,
-            socket: socketMock,
-            client: clientMock
-        })
+        const repository = new ModbusPlcDataRepository(new StandloneModbusClientPool(
+            createStandloneModbusClientFactory((standloneModbusClientMock) => {
+                standloneModbusClientMock.readHoldingRegisters.resolves(dummyResponse)
+                standloneModbusClientMock.connect.callsFake((callback?: (...args: []) => void) => {
+                    callback!()
+                    return standloneModbusClientMock
+                })
+            }), 1
+        ))
 
         await expect(repository.readValue('A')).resolves.toBe(42)
     })
+
     test('GIVEN repository WHEN error reading value from plc THEN throws error', async () => {
         const mockError = new Error()
-        clientMock.readHoldingRegisters.rejects(mockError)
-        socketMock.connect.callsFake(() => {
-            mockMap.get('connect')!()
-            return socketMock
-        })
-
-        const repository = new ModbusPlcDataRepository({
-            host: 'localhost',
-            port:502,
-            socket: socketMock,
-            client: clientMock
-        })
+        const repository = new ModbusPlcDataRepository(new StandloneModbusClientPool(
+            createStandloneModbusClientFactory((standloneModbusClientMock) => {
+                standloneModbusClientMock.readHoldingRegisters.rejects(mockError)
+                standloneModbusClientMock.connect.callsFake((callback?: (...args: []) => void) => {
+                    callback!()
+                    return standloneModbusClientMock
+                })
+            }), 1
+        ))
 
         await expect(repository.readValue('Z')).rejects.toThrow(Error)
     })
 })
 
 describe('ReadValues Modbus', () => {
-    let clientMock: sinon.SinonStubbedInstance<ModbusTCPClient>
-    let socketMock: sinon.SinonStubbedInstance<Socket>
-    let mockMap : Map<string, ()=>void>
-
-    beforeEach(() => {
-        clientMock = sinon.createStubInstance(ModbusTCPClient)
-        socketMock = sinon.createStubInstance(Socket)
-        mockMap = new Map()
-        socketMock.once.callsFake((event : string, listener : ()=>void) => {
-            mockMap.set(event, listener)
-            return socketMock as Socket
-        })
-    })
-
     test('GIVEN repository WHEN error connecting to plc THEN throws error', async () => {
-        socketMock.connect.callsFake(() => {
-            const mockError : (err : Error)=>void = mockMap.get('error')!
-            mockError(new Error())
-            return socketMock
-        })
-
-        const repository = new ModbusPlcDataRepository({
-            host: 'localhost',
-            port: 502,
-            socket: socketMock,
-            client: clientMock
-        })
+        const repository =  new ModbusPlcDataRepository(new StandloneModbusClientPool(
+            createStandloneModbusClientFactory((standloneModbusClientMock, mockMap) => {
+                standloneModbusClientMock.connect.callsFake(() => {
+                    const errorMock : (err : Error) => void = mockMap.get('error')!
+                    errorMock(new Error())
+                    return standloneModbusClientMock
+                })
+            }), 1
+        ))
 
         await expect(repository.readValues()).rejects.toThrow(Error)
     })
@@ -123,187 +103,132 @@ describe('ReadValues Modbus', () => {
                 }
             }
         } as IUserRequestResolve<ModbusTCPRequest<ReadHoldingRegistersRequestBody>>
-        clientMock.readHoldingRegisters.resolves(dummyResponse)
-        
-        socketMock.connect.callsFake(() => {
-            mockMap.get('connect')!()
-            return socketMock
-        })
-
-        const repository = new ModbusPlcDataRepository({
-            host: 'localhost',
-            port: 502,
-            socket: socketMock,
-            client: clientMock
-        })
+        const repository = new ModbusPlcDataRepository(new StandloneModbusClientPool(
+            createStandloneModbusClientFactory((standloneModbusClientMock) => {
+                standloneModbusClientMock.readHoldingRegisters.resolves(dummyResponse)
+                standloneModbusClientMock.connect.callsFake((callback?: (...args: []) => void) => {
+                    callback!()
+                    return standloneModbusClientMock
+                })
+            }), 1
+        ))
 
         const result = new Map([['A', 11], ['B', 22], ['C', 33]])
         await expect(repository.readValues()).resolves.toEqual(result)
     })
 
     test('GIVEN repository WHEN error read from plc THEN throw error', async () => {
-        clientMock.readHoldingRegisters.rejects(new Error())
-        socketMock.connect.callsFake(() => {
-            mockMap.get('connect')!()
-            return socketMock
-        })
-
-        const repository = new ModbusPlcDataRepository({
-            host: 'localhost',
-            port: 502,
-            socket: socketMock,
-            client: clientMock
-        })
+        const repository =  new ModbusPlcDataRepository(new StandloneModbusClientPool(
+            createStandloneModbusClientFactory((standloneModbusClientMock, mockMap) => {
+                standloneModbusClientMock.readHoldingRegisters.rejects(new Error())
+                standloneModbusClientMock.connect.callsFake(() => {
+                    const errorMock : (err : Error) => void = mockMap.get('error')!
+                    errorMock(new Error())
+                    return standloneModbusClientMock
+                })
+            }), 1
+        ))
 
         await expect(repository.readValues()).rejects.toThrow(Error)
     })
 })
 
 describe('WriteValue Modbus', () => {
-    let clientMock: sinon.SinonStubbedInstance<ModbusTCPClient>
-    let socketMock: sinon.SinonStubbedInstance<Socket>
-    let mockMap : Map<string, ()=>void>
-
-    beforeEach(() => {
-        clientMock = sinon.createStubInstance(ModbusTCPClient)
-        socketMock = sinon.createStubInstance(Socket)
-        mockMap = new Map()
-        socketMock.once.callsFake((event : string, listener : ()=>void) => {
-            mockMap.set(event, listener)
-            return socketMock as Socket
-        })
-        
-    })
-
     test('GIVEN repository WHEN error connecting to plc THEN throws error', async () => {
-        socketMock.connect.callsFake(() => {
-            const mockError : (err : Error) => void = mockMap.get('error')!
-            mockError(new Error)
-            return socketMock
-        })
-
-        const repository = new ModbusPlcDataRepository({
-            host: 'localhost',
-            port: 502,
-            socket: socketMock,
-            client: clientMock
-        })
+        const repository =  new ModbusPlcDataRepository(new StandloneModbusClientPool(
+            createStandloneModbusClientFactory((standloneModbusClientMock, mockMap) => {
+                standloneModbusClientMock.connect.callsFake(() => {
+                    const errorMock : (err : Error) => void = mockMap.get('error')!
+                    errorMock(new Error())
+                    return standloneModbusClientMock
+                })
+            }), 1
+        ))
         
         await expect(repository.writeValue('A', 10)).rejects.toThrow(Error)
     })
 
     test('GIVEN repository WHEN writing value THEN value update correctly', async () => {
-        clientMock.writeSingleRegister.resolves(
-            'write correctly' as unknown as IUserRequestResolve<ModbusTCPRequest<WriteSingleRegisterRequestBody>>
-        )
-
-        socketMock.connect.callsFake(() => {
-            mockMap.get('connect')!()
-            return socketMock
-        })
-
-        const repository = new ModbusPlcDataRepository({
-            host: 'localhost',
-            port: 502,
-            socket: socketMock,
-            client: clientMock
-        })
+        const standloneModbusClientMock = createStandloneModbusClientFactory((standloneModbusClientMock) => {
+            standloneModbusClientMock.writeSingleRegister.resolves(
+                'write correctly' as unknown as IUserRequestResolve<ModbusTCPRequest<WriteSingleRegisterRequestBody>>
+            )
+            standloneModbusClientMock.connect.callsFake((callback?: (...args: []) => void) => {
+                callback!()
+                return standloneModbusClientMock
+            })
+        })()
+        const repository =  new ModbusPlcDataRepository(new StandloneModbusClientPool(
+            () => standloneModbusClientMock, 1
+        ))
 
         await expect(repository.writeValue('1', 10)).resolves.toBeUndefined()
-        expect(clientMock.writeSingleRegister.calledOnce).toBeTruthy()
-        expect(clientMock.writeSingleRegister.firstCall.args).toEqual([1, 10])
+        expect(standloneModbusClientMock.writeSingleRegister.calledOnce).toBeTruthy()
+        expect(standloneModbusClientMock.writeSingleRegister.firstCall.args).toEqual([1, 10])
     })
 
     test('GIVEN repository WHEN error writing value to plc THEN throw error', async () => {
-        clientMock.writeSingleRegister.rejects(new Error())
-
-        socketMock.connect.callsFake(() => {
-            mockMap.get('connect')!()
-            return socketMock
-        })
-
-        const repository = new ModbusPlcDataRepository({
-            host: 'localhost',
-            port: 502,
-            socket: socketMock,
-            client: clientMock
-        })
+        const repository =  new ModbusPlcDataRepository(new StandloneModbusClientPool(
+            createStandloneModbusClientFactory((standloneModbusClientMock) => {
+                standloneModbusClientMock.writeSingleRegister.rejects(new Error())
+                standloneModbusClientMock.connect.callsFake((callback?: (...args: []) => void) => {
+                    callback!()
+                    return standloneModbusClientMock
+                })
+            }), 1
+        ))
 
         await expect(repository.writeValue('Z',11)).rejects.toThrow(Error)
     })
 })
 
 describe('WriteValues Modbus', () => {
-    let clientMock: sinon.SinonStubbedInstance<ModbusTCPClient>
-    let socketMock: sinon.SinonStubbedInstance<Socket>
-    let mockMap : Map<string, ()=>void>
-
-    beforeEach(() => {
-        clientMock = sinon.createStubInstance(ModbusTCPClient)
-        socketMock = sinon.createStubInstance(Socket)
-        mockMap = new Map()
-        socketMock.once.callsFake((event : string, listener : ()=>void) => {
-            mockMap.set(event, listener)
-            return socketMock as Socket
-        })
-    })
-
     test('GIVEN repository WHEN error connecting to plc THEN throw error', async () => {
-        socketMock.connect.callsFake(() => {
-            const mockError: (err : Error) => void = mockMap.get('error')!
-            mockError(new Error())
-            return socketMock
-        })
-
-        const repository = new ModbusPlcDataRepository({
-            host: 'localhost',
-            port: 502,
-            socket: socketMock,
-            client: clientMock
-        })
+        const repository =  new ModbusPlcDataRepository(new StandloneModbusClientPool(
+            createStandloneModbusClientFactory((standloneModbusClientMock, mockMap) => {
+                standloneModbusClientMock.connect.callsFake(() => {
+                    const errorMock : (err : Error) => void = mockMap.get('error')!
+                    errorMock(new Error())
+                    return standloneModbusClientMock
+                })
+            }), 1
+        ))
 
         const mapResult = new Map([['A', 11], ['B', 22]])
         await expect(repository.writeValues(mapResult)).rejects.toThrow(Error)
     })
 
     test('GIVEN repository WHEN writing values THEN values update correctly', async () => {
-        clientMock.writeSingleRegister.resolves(
-            'write correctly' as unknown as IUserRequestResolve<ModbusTCPRequest<WriteSingleRegisterRequestBody>>
-        )
-
-        socketMock.connect.callsFake(() => {
-            mockMap.get('connect')!()
-            return socketMock
-        })
-
-        const repository = new ModbusPlcDataRepository({
-            host: 'localhost',
-            port: 502,
-            socket: socketMock,
-            client: clientMock
-        })
+        const standloneModbusClientMock = createStandloneModbusClientFactory((standloneModbusClientMock) => {
+            standloneModbusClientMock.writeSingleRegister.resolves(
+                'write correctly' as unknown as IUserRequestResolve<ModbusTCPRequest<WriteSingleRegisterRequestBody>>
+            )
+            standloneModbusClientMock.connect.callsFake((callback?: (...args: []) => void) => {
+                callback!()
+                return standloneModbusClientMock
+            })
+        })()
+        const repository =  new ModbusPlcDataRepository(new StandloneModbusClientPool(
+            () => standloneModbusClientMock, 1
+        ))
 
         const mapResult = new Map([['A', 11], ['B', 22]])
         await expect(repository.writeValues(mapResult)).resolves.toBeUndefined()
-        expect(clientMock.writeSingleRegister.called).toBeTruthy()
-        expect(clientMock.writeSingleRegister.firstCall.args).toEqual([0, 11])
-        expect(clientMock.writeSingleRegister.secondCall.args).toEqual([1, 22])
+        expect(standloneModbusClientMock.writeSingleRegister.called).toBeTruthy()
+        expect(standloneModbusClientMock.writeSingleRegister.firstCall.args).toEqual([0, 11])
+        expect(standloneModbusClientMock.writeSingleRegister.secondCall.args).toEqual([1, 22])
     })
 
     test('GIVEN repository WHEN error writting value to plc THEN throw error', async () => {
-        clientMock.writeSingleRegister.rejects(new Error())
-
-        socketMock.connect.callsFake(() => {
-            mockMap.get('connect')!()
-            return socketMock
-        })
-
-        const repository = new ModbusPlcDataRepository({
-            host: 'localhost',
-            port: 502,
-            socket: socketMock,
-            client: clientMock
-        })
+        const repository =  new ModbusPlcDataRepository(new StandloneModbusClientPool(
+            createStandloneModbusClientFactory((standloneModbusClientMock) => {
+                standloneModbusClientMock.writeSingleRegister.rejects(new Error())
+                standloneModbusClientMock.connect.callsFake((callback?: (...args: []) => void) => {
+                    callback!()
+                    return standloneModbusClientMock
+                })
+            }), 1
+        ))
 
         const mapResult = new Map([['A', 11], ['B', 22]])
         await expect(repository.writeValues(mapResult)).rejects.toThrow(Error)

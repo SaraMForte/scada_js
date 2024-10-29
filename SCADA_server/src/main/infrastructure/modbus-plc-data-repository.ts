@@ -3,6 +3,8 @@ import { Socket } from 'node:net'
 
 import PlcDataRepository from "../application/plc-data-repository";
 import { PropertyError, PropertyNotFoundError } from '../application/errors';
+import { StandloneModbusClient } from './standlone-modbus-client';
+import { StandloneModbusClientPool } from './modbus-client-pool';
 
 
 const REGISTERSNAMES = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']
@@ -22,14 +24,10 @@ export type ModbusPlcDataRepositoryConstructor = {
  * port = puerto de comunicacion del esclavo
  */
 export default class ModbusPlcDataRepository implements PlcDataRepository {
-    private readonly socket : Socket
-    private readonly client : ModbusTCPClient
-    private readonly options : {host: string , port : number}
+    #modbusClientPool : StandloneModbusClientPool
 
-    constructor({host, port, socket, client} : ModbusPlcDataRepositoryConstructor) {
-        this.socket = socket
-        this.client = client
-        this.options = {'host' : host, 'port' : port}
+    constructor(standloneModbusClientPool : StandloneModbusClientPool) {
+        this.#modbusClientPool = standloneModbusClientPool
     }
 
     /**
@@ -38,36 +36,36 @@ export default class ModbusPlcDataRepository implements PlcDataRepository {
      * @returns devuelve la promesa de un número
      */
     readValue(property: string): Promise<number> {
-        return new Promise((resolve, reject) => {
+        return new Promise(async (resolve, reject) => {
+            const standloneModbusClient = await this.#modbusClientPool.get()
             const connectListener = () => {
                 const propertyNumber = INDEX_BY_COLUM[property]
                 if(typeof propertyNumber === 'undefined'){
                     reject(new PropertyNotFoundError(property))
                 }
-                this.client.readHoldingRegisters(propertyNumber, 1)
+                standloneModbusClient.readHoldingRegisters(propertyNumber, 1)
                 .then(response => {
                     const value = response.response.body.values
 
-                    this.socket.removeListener('error', errorListener)
+                    standloneModbusClient.removeListener('error', errorListener)
                     resolve(Number(value))
                 })
                 .catch(error => {
                     reject(error)
                 })
                 .finally(() => {
-                    this.socket.end()
+                    standloneModbusClient.end()
                 })
             }
             const errorListener = (err : Error) => {
-                this.socket.removeListener('connect', connectListener)
+                standloneModbusClient.removeListener('connect', connectListener)
+                standloneModbusClient.end()
                 reject(err)
             }
-            
             // Leer registros cuando la conexión esté establecida
-            this.socket.once('error', errorListener)
-
+            standloneModbusClient.once('error', errorListener)
             // Conectar al esclavo
-            this.socket.connect(this.options, connectListener)
+            standloneModbusClient.connect(connectListener)
         })
     }
 
@@ -76,9 +74,10 @@ export default class ModbusPlcDataRepository implements PlcDataRepository {
      * @returns devuelve la promesa de un Map con la Clave: Nombre de la Variable PLC y Valor: de la variable
      */
     readValues() : Promise<Map<string, number>> {
-        return new Promise((resolve, reject) => {            
+        return new Promise(async (resolve, reject) => { 
+            const standloneModbusClient = await this.#modbusClientPool.get()           
             const connectListener = () => {
-                this.client.readHoldingRegisters(0, 10)  //Inicio es Inclusive, Final es exclusive
+                standloneModbusClient.readHoldingRegisters(0, 10)  //Inicio es Inclusive, Final es exclusive
                 .then(response => {
                     const registers = response.response.body.valuesAsArray
                     const registersmap = new Map()
@@ -86,27 +85,27 @@ export default class ModbusPlcDataRepository implements PlcDataRepository {
                         registersmap.set(REGISTERSNAMES[i],registers[i])
                     }
                     
-                    this.socket.removeListener('error', errorListener)
+                    standloneModbusClient.removeListener('error', errorListener)
                     resolve(registersmap)
                 })
                 .catch(error => {
                     reject(error)
                 })
                 .finally(() => {
-                    this.socket.end()
+                    standloneModbusClient.end()
                 })
             }
 
             const errorListener = (err : Error) => {
-                this.socket.removeListener('connect', connectListener)
+                standloneModbusClient.removeListener('connect', connectListener)
                 reject(err)
             }
 
             // Leer registros cuando la conexión esté establecida
-            this.socket.once('error', errorListener)
+            standloneModbusClient.once('error', errorListener)
 
             // Conectar al esclavo
-            this.socket.connect(this.options, connectListener)
+            standloneModbusClient.connect(connectListener)
         })
     }
 
@@ -117,31 +116,32 @@ export default class ModbusPlcDataRepository implements PlcDataRepository {
      * @returns void
      */
     writeValue(property: string, value: number): Promise<void> {
-        return new Promise((resolve, reject) => {
+        return new Promise(async (resolve, reject) => {
+            const standloneModbusClient = await this.#modbusClientPool.get()
             const connectListener = () => {
-                this.client.writeSingleRegister(Number(property), value)
+                standloneModbusClient.writeSingleRegister(Number(property), value)
                 .then((response) => {
-                    this.socket.removeListener('error', errorListener)
+                    standloneModbusClient.removeListener('error', errorListener)
                     resolve()
                 })
                 .catch((error) => {
                     reject(error)
                 })
                 .finally(() => {
-                    this.socket.end()
+                    standloneModbusClient.end()
                 })
             }
 
             const errorListener = (err : Error) => {
-                this.socket.removeListener('connect', connectListener)
+                standloneModbusClient.removeListener('connect', connectListener)
                 reject(err)
             }
 
             // Leer registros cuando la conexión esté establecida
-            this.socket.once('error', errorListener)
+            standloneModbusClient.once('error', errorListener)
 
             //Conectar al esclavo
-            this.socket.connect(this.options, connectListener)
+            standloneModbusClient.connect(connectListener)
         })
     }
 
@@ -151,33 +151,33 @@ export default class ModbusPlcDataRepository implements PlcDataRepository {
      * @returns 
      */
     writeValues(valuesMap: Map<string, number>): Promise<void> {
-        return new Promise((resolve, reject) => {
+        return new Promise(async (resolve, reject) => {
+            const standloneModbusClient = await this.#modbusClientPool.get()
             const connectListener = () => {
                 Promise.all([...valuesMap.entries()].map(([key, value]) => { 
-                    return this.client.writeSingleRegister(INDEX_BY_COLUM[key], value)}
+                    return standloneModbusClient.writeSingleRegister(INDEX_BY_COLUM[key], value)}
                 ))
                 .then(() => {
-                    this.socket.removeListener('error', errorListener)
+                    standloneModbusClient.removeListener('error', errorListener)
                     resolve()
                 })
                 .catch((error) => {
                     reject(error)
                 })
                 .finally(() => {
-                    this.socket.end()
+                    standloneModbusClient.end()
                 })
             }
             
             const errorListener = (err : Error) => {
-                this.socket.removeListener('connect', connectListener)
+                standloneModbusClient.removeListener('connect', connectListener)
                 reject(err)
             }
             
             // Leer registros cuando la conexión esté establecida
-            this.socket.once('error', errorListener)
-
+            standloneModbusClient.once('error', errorListener)
             //Conectar al esclavo
-            this.socket.connect(this.options, connectListener)
+            standloneModbusClient.connect(connectListener)
         })
     }
 }
