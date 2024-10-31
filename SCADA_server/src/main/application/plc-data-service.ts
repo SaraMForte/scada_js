@@ -9,6 +9,13 @@ export type PlcDatasResoult = {
     error : Error[]
 }
 
+type PropertiesByRepositoryGroupingResult = {
+    groups : PropertiesByRepository, 
+    errors : PropertyError[]
+}
+
+type PropertiesByRepository = Map<PlcDataRepository, Map<string, number>>
+
 export default class PlcDataService {
     readonly #repositories : PlcDataRepository[]
 
@@ -77,7 +84,7 @@ export default class PlcDataService {
         const dataOrError = await Promise.all(propiertiesPromise)
 
         const dataMap : Map<string, number> = new Map()
-        let errorArray : Error[] = []
+        const errorArray : Error[] = []
         for(let i = 0; i < propiertiesArray.length; i++) {
             const currentDataOrError = dataOrError[i]
             if (currentDataOrError instanceof Error) {
@@ -96,8 +103,8 @@ export default class PlcDataService {
             .catch(err => err))
         
         const dataOrErrorArray = await Promise.all(repositoriesPromises)
-        let errorArray : Error[] = []
-        let dataArray : Map<string, number >[] = [] 
+        const errorArray : Error[] = []
+        const dataArray : Map<string, number >[] = [] 
         for(const dataOrError of dataOrErrorArray) {
             if (dataOrError instanceof Error) {
                 errorArray.push(dataOrError)
@@ -146,7 +153,7 @@ export default class PlcDataService {
     async #resolvePropertyExist (property : string, validDataArray : number[], dataOrErrorArray : Array<number | Error>) : Promise<number> {
         switch (validDataArray.length) {
             case 0: 
-                throw new PropertyNotFoundError(property)
+                throw this.#buildError(property, dataOrErrorArray[0])
             case 1:
                 return await this.#getPropertyPosition(dataOrErrorArray)
             default:
@@ -154,8 +161,11 @@ export default class PlcDataService {
         }
     }
 
-    buildMotiveError() {
-
+    #buildError(property : string, dataOrError : number | Error) {
+        if(dataOrError instanceof PropertyError) {
+            return new PropertyNotFoundError(property)
+        }
+        return dataOrError
     }
 
     async #getPropertyPosition(dataOrErrorArray : Array<number | Error>) : Promise<number> {
@@ -169,27 +179,53 @@ export default class PlcDataService {
      * @returns Una promesa que se resuelve con una lista de errores del tipo PropertyError
      */
     async writeValues(valuesMap : Map<string, number>) : Promise<PropertyError[]> {
-        const internalWriteValue = async ([property, value] : [string, number]) : Promise<PropertyError | void> => {
-            return await this.writeValue(property, value)
-                .catch(cause => cause)
-        }
-        const writePromises = Array.from(valuesMap).map(internalWriteValue)
-        const writeResults = await Promise.all(writePromises)
-        return writeResults.filter(result => typeof result !== 'undefined')
+        const propertiesByRepositoryGroup = await this.#groupPropertiesByRepository(valuesMap)
+        const propertiesWriteErrors = await this.#writeProperiesGroups(propertiesByRepositoryGroup.groups)
+
+        return [...propertiesByRepositoryGroup.errors, ...propertiesWriteErrors]
     }
 
-    async writeValues2(valuesMap : Map<string, number>) : Promise<PropertyError[]> {
-        const IndexPropertyMap = new Map()
-        const promises = Array.from(valuesMap.entries()).map(async ([key, value]) => {
-            const result = await this.#findPropertyRepository(key)
-            return [key, result]
-        })
-        const results = await Promise.all(promises)
-        results.forEach(([key, result]) => {
-            IndexPropertyMap.set(key, result)
-        })
-        console.log(IndexPropertyMap)
-        return []
+    async #groupPropertiesByRepository(valuesMap : Map<string, number>) : Promise<PropertiesByRepositoryGroupingResult> {
+        const propertiesByRepository : PropertiesByRepository = new Map()
+        const propertiesErrors : PropertyError[] = []
+        await Promise.all(
+            Array.from(valuesMap).map(this.#addToRepositoryGroup(propertiesByRepository, propertiesErrors))
+        )
+        return {groups: propertiesByRepository, errors: propertiesErrors}
+    }
+
+    #addToRepositoryGroup(propertiesByRepository : PropertiesByRepository, propertiesErrors : PropertyError[]) {
+        return async ([property, value] : [string, number]) => {
+            try {
+                const repository = await this.#findPropertyRepository(property)
+                if(!propertiesByRepository.has(repository)) {
+                    propertiesByRepository.set(repository, new Map())
+                }
+                propertiesByRepository.get(repository)!
+                    .set(property, value)
+            } catch(error) {
+                if (error instanceof PropertyError) {
+                    propertiesErrors.push(error)
+                } else {
+                    throw error
+                }
+            }
+        }
+    }
+
+    async #writeProperiesGroups(propertiesByRepository : PropertiesByRepository) : Promise<PropertyError[]> {
+        const propertyErrorArrays = await Promise.all(
+            Array.from(propertiesByRepository).map(PlcDataService.#writeToRepository)
+        )
+        return propertyErrorArrays.filter((value) => typeof value !== 'undefined').flat()
+    }
+
+    static async #writeToRepository([repository, valuesMap] : [PlcDataRepository, Map<string, number>]) : Promise<void | PropertyError[]> {
+        try {
+            repository.writeValues(valuesMap)
+        } catch(cause) {
+            return Array.from(valuesMap).map(([property, value]) => new PropertyWriteError(property, value, cause))  
+        }
     }
 }
-    
+

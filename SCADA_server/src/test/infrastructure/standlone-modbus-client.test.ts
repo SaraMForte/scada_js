@@ -104,7 +104,7 @@ describe('Modbus Standlone methods',() => {
         ).toBeTruthy()
     })
     
-    test('GIVEN standlone modbus client WHEN end conexion THEN end correctly', () => {
+    test('GIVEN standlone modbus client WHEN end conexion THEN end correctly.', () => {
         const mockFuntion = () => {}
         const standloneModbusClient = new StandloneModbusClient({
             host: 'localhost',

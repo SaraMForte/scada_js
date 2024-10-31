@@ -2,8 +2,7 @@ import { ModbusTCPClient } from 'jsmodbus'
 import { Socket } from 'node:net'
 
 import PlcDataRepository from "../application/plc-data-repository";
-import { PropertyError, PropertyNotFoundError } from '../application/errors';
-import { StandloneModbusClient } from './standlone-modbus-client';
+import { PropertyNotFoundError, PropertyWriteError } from '../application/errors';
 import { StandloneModbusClientPool } from './modbus-client-pool';
 
 
@@ -30,11 +29,6 @@ export default class ModbusPlcDataRepository implements PlcDataRepository {
         this.#modbusClientPool = standloneModbusClientPool
     }
 
-    /**
-     * Lee un registro mediante comunicación Modbus TCP
-     * @param property dirección del valor de lectura
-     * @returns devuelve la promesa de un número
-     */
     readValue(property: string): Promise<number> {
         return new Promise(async (resolve, reject) => {
             const standloneModbusClient = await this.#modbusClientPool.get()
@@ -69,10 +63,6 @@ export default class ModbusPlcDataRepository implements PlcDataRepository {
         })
     }
 
-    /**
-     * Lee los registros mediante comunicación Modbus TCP 
-     * @returns devuelve la promesa de un Map con la Clave: Nombre de la Variable PLC y Valor: de la variable
-     */
     readValues() : Promise<Map<string, number>> {
         return new Promise(async (resolve, reject) => { 
             const standloneModbusClient = await this.#modbusClientPool.get()           
@@ -81,10 +71,10 @@ export default class ModbusPlcDataRepository implements PlcDataRepository {
                 .then(response => {
                     const registers = response.response.body.valuesAsArray
                     const registersmap = new Map()
+
                     for (let i = 0; i < registers.length; i++) {
                         registersmap.set(REGISTERSNAMES[i],registers[i])
                     }
-                    
                     standloneModbusClient.removeListener('error', errorListener)
                     resolve(registersmap)
                 })
@@ -109,18 +99,17 @@ export default class ModbusPlcDataRepository implements PlcDataRepository {
         })
     }
 
-    /**
-     * Escribe en el registro indicado el valor asignado mediante comunicación Modbus TCP
-     * @param property número del nombre en el registro de Modbus TCP
-     * @param value valor que se asigna al registro Modbus TCP
-     * @returns void
-     */
     writeValue(property: string, value: number): Promise<void> {
         return new Promise(async (resolve, reject) => {
             const standloneModbusClient = await this.#modbusClientPool.get()
             const connectListener = () => {
-                standloneModbusClient.writeSingleRegister(Number(property), value)
-                .then((response) => {
+                const propertyNumber = INDEX_BY_COLUM[property]
+                if(typeof propertyNumber === 'undefined'){
+                    reject(new PropertyWriteError(property, value))
+                    return
+                }
+                standloneModbusClient.writeSingleRegister(propertyNumber, value)
+                .then(() => {
                     standloneModbusClient.removeListener('error', errorListener)
                     resolve()
                 })
@@ -145,15 +134,16 @@ export default class ModbusPlcDataRepository implements PlcDataRepository {
         })
     }
 
-    /**
-     * Escribe los registros apartir del índice indicados los valor asignados mediante comunicación Modbus TCP
-     * @param valuesMap 
-     * @returns 
-     */
     writeValues(valuesMap: Map<string, number>): Promise<void> {
         return new Promise(async (resolve, reject) => {
             const standloneModbusClient = await this.#modbusClientPool.get()
             const connectListener = () => {
+                valuesMap.forEach((value, property) => {
+                    const propertyNumber = INDEX_BY_COLUM[property]
+                    if(typeof propertyNumber === 'undefined'){
+                        reject(new PropertyWriteError(property, value))
+                    }
+                })
                 Promise.all([...valuesMap.entries()].map(([key, value]) => { 
                     return standloneModbusClient.writeSingleRegister(INDEX_BY_COLUM[key], value)}
                 ))
