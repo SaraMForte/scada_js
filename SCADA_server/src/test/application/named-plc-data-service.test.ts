@@ -1,32 +1,37 @@
-import NamedPlcDataRepository from "../../main/application/named-plc-data-repository"
-import NamedPlcDataService, { PlcDatasResoult } from "../../main/application/named-plc-data-service"
-import { PropertyError, PropertyNotFoundError, PropertyWriteError, RepositoryNotFoundError } from "../../main/application/errors"
-import { beforeEach, describe, expect, test } from "vitest"
+import { beforeEach, describe, expect, test } from 'vitest'
+import {
+    PropertyError,
+    PropertyNotFoundError,
+    PropertyWriteError,
+    RepositoryNotFoundError
+} from '../../main/application/errors'
+import NamedPlcDataRepository from '../../main/application/named-plc-data-repository'
+import NamedPlcDataService, { PlcDatasResoult } from '../../main/application/named-plc-data-service'
 
 const DUMMY_DATA_1 = {
-    P : 13,
-    J : 84,
-    K : 26,
-    L : 217,
-    G : 247
+    P: 13,
+    J: 84,
+    K: 26,
+    L: 217,
+    G: 247
 }
 const DUMMY_DATA_2 = {
-    X : 777,
-    Y : 236,
-    W : 93
+    X: 777,
+    Y: 236,
+    W: 93
 }
 
 class DummyNamedPlcDataRepository implements NamedPlcDataRepository {
     plcName: string
-    dummyData : {[key : string] : number}
+    dummyData: { [key: string]: number }
 
-    constructor(plcName : string, dummyData : {[key : string] : number}) {
+    constructor(plcName: string, dummyData: { [key: string]: number }) {
         this.plcName = plcName
         this.dummyData = dummyData
     }
 
     async readValue(property: string): Promise<number> {
-        if(property in this.dummyData) {
+        if (property in this.dummyData) {
             return this.dummyData[property] ?? 0
         }
         throw new PropertyNotFoundError(property)
@@ -44,34 +49,38 @@ class DummyNamedPlcDataRepository implements NamedPlcDataRepository {
         for (const [property, value] of valuesMap) {
             this.dummyData[property] = value
         }
-    }   
+    }
 }
 
 class DummyNamedPlcErrorRepository implements NamedPlcDataRepository {
     plcName: string
-    dummyData : {[key : string] : number}
-    
-    constructor(plcName : string, dummyData : {[key : string] : number}) {
+    dummyData: { [key: string]: number }
+
+    constructor(plcName: string, dummyData: { [key: string]: number }) {
         this.plcName = plcName
         this.dummyData = dummyData
     }
-    
-    readValue(property: string): Promise<number> {
-        return new Promise(() => {throw new PropertyNotFoundError('propertyName')})
+
+    readValue(): Promise<number> {
+        return new Promise(() => {
+            throw new PropertyNotFoundError('propertyName')
+        })
     }
 
     readValues(): Promise<Map<string, number>> {
-        return new Promise(() => {throw new PropertyNotFoundError('propertyName')})
+        return new Promise(() => {
+            throw new PropertyNotFoundError('propertyName')
+        })
     }
 
-    writeValue(property: string, value: number): Promise<void> {
-        return new Promise(() => {throw new PropertyWriteError('propertyName', 0)})
+    writeValue(): Promise<void> {
+        return new Promise(() => {
+            throw new PropertyWriteError('propertyName', 0)
+        })
     }
 
-    // writeValue = jest.fn().mockRejectedValue(new PropertyWriteError('propertyName', 0))
-
-    writeValues(valuesMap: Map<string, number>): Promise<void> {
-        throw new Error("Method not implemented.")
+    writeValues(): Promise<void> {
+        throw new Error('Method not implemented.')
     }
 }
 
@@ -94,9 +103,8 @@ describe('Creation', () => {
     test('GIVEN multiple NamedPlcDataReposity when take plc names THEN return array of names', () => {
         const plcDataService = new NamedPlcDataService(dummyRepository1, dummyRepository2)
 
-        expect(plcDataService.getPlcNames).toEqual(['dummyPlc1','dummyPlc2'])
+        expect(plcDataService.getPlcNames).toEqual(['dummyPlc1', 'dummyPlc2'])
     })
-
 })
 
 describe('ReadValue', () => {
@@ -141,48 +149,50 @@ describe('ReadValues', () => {
         await expect(plcDataService.readValues('')).rejects.toThrow(RepositoryNotFoundError)
     })
 
-    test('GIVEN repositories with empty data WHEN read all properties THEN return no data and empty error', 
-    async () => {
+    test('GIVEN repositories with empty data WHEN read all properties THEN return no data and empty error', async () => {
         const plcDataEmptyService = new NamedPlcDataService(
             new DummyNamedPlcDataRepository('dummyPlc1', {}),
             new DummyNamedPlcDataRepository('dummyPlc2', {})
         )
-        const dummyValues : PlcDatasResoult = {data : new Map(), error : []}
-        
+        const dummyValues: PlcDatasResoult = { data: new Map(), error: [] }
+
         expect(await plcDataEmptyService.readValues('dummyPlc1')).toEqual(dummyValues)
         expect(await plcDataEmptyService.readValues('dummyPlc2')).toEqual(dummyValues)
     })
 
-    test('GIVEN properties with values WHEN read all properties of repositories THEN return data and empty error',
-    async () => {
-        const dummyValues1 : PlcDatasResoult = {data : new Map(DUMMY_DATA_ARRAY_1), error : []}
-        const dummyValues2 : PlcDatasResoult = {data : new Map(DUMMY_DATA_ARRAY_2), error : []}
+    test('GIVEN properties with values WHEN read all properties of repositories THEN return data and empty error', async () => {
+        const dummyValues1: PlcDatasResoult = { data: new Map(DUMMY_DATA_ARRAY_1), error: [] }
+        const dummyValues2: PlcDatasResoult = { data: new Map(DUMMY_DATA_ARRAY_2), error: [] }
 
         expect(await plcDataService.readValues('dummyPlc1')).toEqual(dummyValues1)
         expect(await plcDataService.readValues('dummyPlc2')).toEqual(dummyValues2)
     })
 
-    test('GIVEN properties with values WHEN real specific properties of repositories THEN return data and empty error',
-    async () => {
-        const dummyMap = new Map([['P', 13], ['J', 84], ['K', 26]])
-        const dummyKeys : string[] = Array.from(dummyMap.keys())
-        const dummyValues : PlcDatasResoult = {data : dummyMap, error : []}
+    test('GIVEN properties with values WHEN real specific properties of repositories THEN return data and empty error', async () => {
+        const dummyMap = new Map([
+            ['P', 13],
+            ['J', 84],
+            ['K', 26]
+        ])
+        const dummyKeys: string[] = Array.from(dummyMap.keys())
+        const dummyValues: PlcDatasResoult = { data: dummyMap, error: [] }
 
         expect(await plcDataService.readValues('dummyPlc1', dummyKeys)).toEqual(dummyValues)
     })
-    
-    test('GIVEN properties with values WHEN attempting to read all properties THEN return empty data with errors', 
-    async () => {
+
+    test('GIVEN properties with values WHEN attempting to read all properties THEN return empty data with errors', async () => {
         const result2 = await plcErrorService.readValues('dummyPlc2')
         expect(result2.data).toEqual(new Map())
         expect(result2.error.length).toEqual(1)
         result2.error.forEach(err => expect(err).toEqual(expect.any(Error)))
     })
 
-    test('GIVEN properties with values WHEN attempting to read specific properties THEN returns empty data with errors',
-        async () => {
-        const dummyMap = new Map([['L', 217], ['G', 247]])
-        const dummyKeys : string[] = Array.from(dummyMap.keys())
+    test('GIVEN properties with values WHEN attempting to read specific properties THEN returns empty data with errors', async () => {
+        const dummyMap = new Map([
+            ['L', 217],
+            ['G', 247]
+        ])
+        const dummyKeys: string[] = Array.from(dummyMap.keys())
 
         const result1 = await plcErrorService.readValues('dummyPlc1', dummyKeys)
         expect(result1.data).toEqual(new Map())
@@ -190,11 +200,18 @@ describe('ReadValues', () => {
         result1.error.forEach(err => expect(err).toEqual(expect.any(Error)))
     })
 
-    test('GIVEN propertie with values WHEN read existing and non-exisitng properties THEN return data and errors', 
-    async () => {
-        const dummyMap = new Map([['L', 217], ['G', 247], ['Z', 10], ['A', 11]])
-        const dummyKeys : string[] = Array.from(dummyMap.keys())
-        const dummyMapResult = new Map([['L', 217], ['G', 247]])
+    test('GIVEN propertie with values WHEN read existing and non-exisitng properties THEN return data and errors', async () => {
+        const dummyMap = new Map([
+            ['L', 217],
+            ['G', 247],
+            ['Z', 10],
+            ['A', 11]
+        ])
+        const dummyKeys: string[] = Array.from(dummyMap.keys())
+        const dummyMapResult = new Map([
+            ['L', 217],
+            ['G', 247]
+        ])
 
         const result = await plcDataService.readValues('dummyPlc1', dummyKeys)
         expect(result.data).toEqual(dummyMapResult)
@@ -204,31 +221,31 @@ describe('ReadValues', () => {
 })
 
 describe('WriteValue', () => {
-    let dummyRepository1 : DummyNamedPlcDataRepository
-    let dummyRepository2 : DummyNamedPlcDataRepository
+    let dummyRepository1: DummyNamedPlcDataRepository
+    let dummyRepository2: DummyNamedPlcDataRepository
 
-    let dummyErrorRepository1 : DummyNamedPlcErrorRepository
-    let dummyErrorRepository2 : DummyNamedPlcErrorRepository
+    let dummyErrorRepository1: DummyNamedPlcErrorRepository
+    let dummyErrorRepository2: DummyNamedPlcErrorRepository
 
     let plcDataService: NamedPlcDataService
-    let plcErrorService : NamedPlcDataService
+    let plcErrorService: NamedPlcDataService
 
     beforeEach(() => {
-        dummyRepository1 = new DummyNamedPlcDataRepository('dummyPlc1', {...DUMMY_DATA_1})
-        dummyRepository2 = new DummyNamedPlcDataRepository('dummyPlc2', {...DUMMY_DATA_2})
-    
-        dummyErrorRepository1 = new DummyNamedPlcErrorRepository('dummyPlc1', {...DUMMY_DATA_1})
-        dummyErrorRepository2 = new DummyNamedPlcErrorRepository('dummyPlc2', {...DUMMY_DATA_2})
-    
+        dummyRepository1 = new DummyNamedPlcDataRepository('dummyPlc1', { ...DUMMY_DATA_1 })
+        dummyRepository2 = new DummyNamedPlcDataRepository('dummyPlc2', { ...DUMMY_DATA_2 })
+
+        dummyErrorRepository1 = new DummyNamedPlcErrorRepository('dummyPlc1', { ...DUMMY_DATA_1 })
+        dummyErrorRepository2 = new DummyNamedPlcErrorRepository('dummyPlc2', { ...DUMMY_DATA_2 })
+
         plcDataService = new NamedPlcDataService(dummyRepository1, dummyRepository2)
-        plcErrorService = new NamedPlcDataService(dummyErrorRepository1, dummyErrorRepository2) 
+        plcErrorService = new NamedPlcDataService(dummyErrorRepository1, dummyErrorRepository2)
     })
 
     test('GIVEN properties with values WHEN read from non-exisitng plc repositorty THEN return error', async () => {
         await expect(plcDataService.writeValue('dummyPlc3', 'K', 28)).rejects.toThrow(RepositoryNotFoundError)
         await expect(plcDataService.writeValue('', 'K', 28)).rejects.toThrow(RepositoryNotFoundError)
     })
-    
+
     test('GIVEN repositories with data WHEN writiting existing property THEN property updated correctly', async () => {
         await plcDataService.writeValue('dummyPlc1', 'K', 28)
         expect(dummyRepository1.dummyData['K']).toBe(28)
@@ -236,7 +253,7 @@ describe('WriteValue', () => {
 
         await plcDataService.writeValue('dummyPlc2', 'Y', 29)
         expect(dummyRepository2.dummyData['Y']).toBe(29)
-        expect(dummyRepository1.dummyData['Y']).not.toBe(29)        
+        expect(dummyRepository1.dummyData['Y']).not.toBe(29)
     })
 
     test('GIVEN repositories with data WHEN writing non-existing property THEN throws error', async () => {
@@ -246,35 +263,41 @@ describe('WriteValue', () => {
 })
 
 describe('WriteValues', () => {
-    let dummyRepository1 : DummyNamedPlcDataRepository
-    let dummyRepository2 : DummyNamedPlcDataRepository
+    let dummyRepository1: DummyNamedPlcDataRepository
+    let dummyRepository2: DummyNamedPlcDataRepository
 
-    let dummyErrorRepository1 : DummyNamedPlcErrorRepository
-    let dummyErrorRepository2 : DummyNamedPlcErrorRepository
+    let dummyErrorRepository1: DummyNamedPlcErrorRepository
+    let dummyErrorRepository2: DummyNamedPlcErrorRepository
 
     let plcDataService: NamedPlcDataService
-    let plcErrorService : NamedPlcDataService
+    let plcErrorService: NamedPlcDataService
 
     beforeEach(() => {
-        dummyRepository1 = new DummyNamedPlcDataRepository('dummyPlc1', {...DUMMY_DATA_1})
-        dummyRepository2 = new DummyNamedPlcDataRepository('dummyPlc2', {...DUMMY_DATA_2})
-    
-        dummyErrorRepository1 = new DummyNamedPlcErrorRepository('dummyPlc1', {...DUMMY_DATA_1})
-        dummyErrorRepository2 = new DummyNamedPlcErrorRepository('dummyPlc2', {...DUMMY_DATA_2})
-    
+        dummyRepository1 = new DummyNamedPlcDataRepository('dummyPlc1', { ...DUMMY_DATA_1 })
+        dummyRepository2 = new DummyNamedPlcDataRepository('dummyPlc2', { ...DUMMY_DATA_2 })
+
+        dummyErrorRepository1 = new DummyNamedPlcErrorRepository('dummyPlc1', { ...DUMMY_DATA_1 })
+        dummyErrorRepository2 = new DummyNamedPlcErrorRepository('dummyPlc2', { ...DUMMY_DATA_2 })
+
         plcDataService = new NamedPlcDataService(dummyRepository1, dummyRepository2)
-        plcErrorService = new NamedPlcDataService(dummyErrorRepository1, dummyErrorRepository2) 
+        plcErrorService = new NamedPlcDataService(dummyErrorRepository1, dummyErrorRepository2)
     })
 
     test('GIVEN properties with values WHEN read from non-exisitng plc repositorty THEN return error', async () => {
-        const dummyMap = new Map([['J', 71], ['K', 72]])
+        const dummyMap = new Map([
+            ['J', 71],
+            ['K', 72]
+        ])
 
         await expect(plcDataService.writeValues('dummyPlc3', dummyMap)).rejects.toThrow(RepositoryNotFoundError)
         await expect(plcDataService.writeValues('', dummyMap)).rejects.toThrow(RepositoryNotFoundError)
     })
 
     test('GIVEN repositories with data WHEN writing existing properties THEN return no errors', async () => {
-        const dummyMap1 = new Map([['J', 71], ['K', 72]])
+        const dummyMap1 = new Map([
+            ['J', 71],
+            ['K', 72]
+        ])
 
         const writeResult = await plcDataService.writeValues('dummyPlc1', dummyMap1)
         expect(dummyRepository1.dummyData['J']).toBe(71)
@@ -286,9 +309,12 @@ describe('WriteValues', () => {
     })
 
     test('GIVEN repositories with data when attempt writting existing properties THEN return errors', async () => {
-        const dummyMap = new Map([['J', 71], ['K', 72]])
+        const dummyMap = new Map([
+            ['J', 71],
+            ['K', 72]
+        ])
 
-        const writeResults = await plcErrorService.writeValues('dummyPlc1',dummyMap)
+        const writeResults = await plcErrorService.writeValues('dummyPlc1', dummyMap)
         expect(writeResults.length).toBe(2)
         writeResults.forEach(error => expect(error).toEqual(expect.any(PropertyError)))
     })

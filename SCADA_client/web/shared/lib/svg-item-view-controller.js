@@ -37,6 +37,7 @@ class SvgItemViewController {
         return __awaiter(this, void 0, void 0, function* () {
             const response = yield fetch(__classPrivateFieldGet(this, _SvgItemViewController_dataUrl, "f"));
             const data = yield response.json();
+            console.log(data);
             __classPrivateFieldGet(this, _SvgItemViewController_svgItemManager, "f").refreshItemsStatus(data, __classPrivateFieldGet(this, _SvgItemViewController_svgItemsKeys, "f"));
         });
     }

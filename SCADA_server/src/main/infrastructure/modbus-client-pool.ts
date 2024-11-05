@@ -1,4 +1,4 @@
-import { StandloneModbusClient } from "./standlone-modbus-client"
+import { StandloneModbusClient } from './standlone-modbus-client'
 
 export class StandloneModbusClientPool {
     #freeElements: StandloneModbusClient[]
@@ -38,12 +38,12 @@ export class StandloneModbusClientPool {
         }
 
         get(target: StandloneModbusClient, propName: keyof StandloneModbusClient) {
-            if (propName !== "end") {
-                return target[propName];
+            if (propName !== 'end') {
+                return target[propName]
             }
             return (callback?: () => void) => {
                 this.#pool.#refund(target)
-                return target[propName](callback);
+                return target[propName](callback)
             }
         }
     }
