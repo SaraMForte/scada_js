@@ -1,25 +1,46 @@
 {
-  "name": "scada_client",
-  "version": "1.0.0",
-  "main": "src/main/main.js",
-  "type": "module",
-  "scripts": {
-    "test": "",
-    "start": "tsc && electron src/main/main.js",
-    "build": "tsc"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
-  "devDependencies": {
-    "@types/electron": "^1.4.38",
-    "@types/express": "^4.17.21",
-    "@types/node": "^22.5.0",
-    "electron": "^32.0.1",
-    "typescript": "^5.5.4"
-  },
-  "dependencies": {
-    "express": "^4.21.0"
-  }
+    "name": "scada_client",
+    "version": "1.0.0",
+    "main": "src/main/node/main.js",
+    "type": "module",
+    "scripts": {
+        "start": "tsc && electron src/main/node/main.js",
+        "build": "tsc",
+        "test": "vitest run --coverage"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "description": "",
+    "devDependencies": {
+        "@eslint/js": "^9.14.0",
+        "@types/electron": "^1.4.38",
+        "@types/eslint__js": "^8.42.3",
+        "@types/express": "^4.17.21",
+        "@types/node": "^22.5.0",
+        "@types/sinon": "^17.0.3",
+        "@typescript-eslint/eslint-plugin": "^8.14.0",
+        "@typescript-eslint/parser": "^8.14.0",
+        "@vitest/coverage-v8": "^2.1.4",
+        "c8": "^10.1.2",
+        "electron": "^32.0.1",
+        "eslint": "^9.14.0",
+        "eslint-config-prettier": "^9.1.0",
+        "jsdom": "^25.0.1",
+        "prettier": "^3.3.3",
+        "sinon": "^19.0.2",
+        "typescript": "^5.6.3",
+        "typescript-eslint": "^8.14.0",
+        "vite-tsconfig-paths": "^5.1.2",
+        "vitest": "^2.1.4"
+    },
+    "dependencies": {
+        "express": "^4.21.0"
+    },
+    "imports": {
+        "@app/*": "src/main/node/*",
+        "@webapp/*": "src/main/webapp/*",
+        "@appTest/*": "src/test/node/*",
+        "@webappTest/*": "src/test/webapp/*"
+    }
 }

@@ -27,7 +27,7 @@ class TableManager {
         __classPrivateFieldSet(this, _TableManager_rowsHeaders, headerObj, "f");
     }
     get tableId() {
-        return __classPrivateFieldGet(this, _TableManager_tableDoc, "f");
+        return __classPrivateFieldGet(this, _TableManager_tableDoc, "f").id;
     }
     createTable() {
         const tableThead = __classPrivateFieldGet(this, _TableManager_instances, "m", _TableManager_getTableThead).call(this);
@@ -35,18 +35,12 @@ class TableManager {
         __classPrivateFieldGet(this, _TableManager_tableDoc, "f").innerHTML = tableThead + tableBody;
     }
     refreshTable(dataBody) {
-        const tableTbody = document.querySelector(`#${__classPrivateFieldGet(this, _TableManager_tableDoc, "f").id} tbody`);
-        if (!tableTbody) {
-            throw new Error(`The table with ID: ${__classPrivateFieldGet(this, _TableManager_tableDoc, "f")} not found`);
-        }
-        tableTbody.innerHTML = __classPrivateFieldGet(this, _TableManager_instances, "m", _TableManager_getTableBody).call(this, dataBody);
+        __classPrivateFieldGet(this, _TableManager_tableDoc, "f").innerHTML = __classPrivateFieldGet(this, _TableManager_instances, "m", _TableManager_getTableBody).call(this, dataBody);
     }
 }
 _TableManager_tableDoc = new WeakMap(), _TableManager_rowsHeaders = new WeakMap(), _TableManager_instances = new WeakSet(), _TableManager_getTableThead = function _TableManager_getTableThead() {
     let tableThead = `<thead><tr>`;
-    tableThead += __classPrivateFieldGet(this, _TableManager_rowsHeaders, "f")
-        .map((header) => `<th>${header[1]}</th>`)
-        .join('');
+    tableThead += __classPrivateFieldGet(this, _TableManager_rowsHeaders, "f").map(header => `<th>${header[1]}</th>`).join('');
     tableThead += `</tr></thead>`;
     return tableThead;
 }, _TableManager_getTableBody = function _TableManager_getTableBody(dataBody) {
@@ -57,9 +51,7 @@ _TableManager_tableDoc = new WeakMap(), _TableManager_rowsHeaders = new WeakMap(
     let tableBody = `<tbody>`;
     for (const data of dataBody) {
         tableBody += `<tr>`;
-        tableBody += __classPrivateFieldGet(this, _TableManager_rowsHeaders, "f")
-            .map(rowContain => { var _a; return `<td>${data[(_a = rowContain[0]) !== null && _a !== void 0 ? _a : 'N/A']}</td>`; })
-            .join('');
+        tableBody += __classPrivateFieldGet(this, _TableManager_rowsHeaders, "f").map(rowContain => { var _a; return `<td>${(_a = data[rowContain[0]]) !== null && _a !== void 0 ? _a : 'N/A'}</td>`; }).join('');
         tableBody += `</tr>`;
     }
     tableBody += `</tbody>`;

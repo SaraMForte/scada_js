@@ -2,7 +2,7 @@ import Express from "express";
 import path from "path";
 const clientWebServer = Express();
 const port = 3020;
-const webPath = path.resolve('web');
+const webPath = path.resolve('src/main/webapp');
 clientWebServer.use(Express.static(webPath, {
     setHeaders: (res, filePath) => {
         if (filePath.endsWith('.js') || filePath.endsWith('.mjs')) {
