@@ -1,15 +1,24 @@
 export interface Refreshable {
-    refresh() : Promise<void>
-    refreshLoop(loopTime : number) : Promise<void>
+    isRefreshLoopStopped: boolean
+    refresh(): Promise<void>
+    refreshLoop(loopTime: number): Promise<void>
+    stopRefreshLoop(): void
 }
 
-export async function refreshLoop(refreshable : Refreshable, loopTime : number) {
+export async function refreshLoop(refreshable: Refreshable, loopTime: number) {
     const refreshStep = () => refreshLoop(refreshable, loopTime)
 
-    await refreshable.refresh()
-        .then(() => setTimeout(refreshStep, loopTime))
+    await refreshable
+        .refresh()
+        .then(() => {
+            if (!refreshable.isRefreshLoopStopped) {
+                return setTimeout(refreshStep, loopTime)
+            }
+        })
         .catch(error => {
             console.error(error)
-            setTimeout(refreshStep, loopTime * 5)
+            if (!refreshable.isRefreshLoopStopped) {
+                return setTimeout(refreshStep, loopTime * 5)
+            }
         })
 }

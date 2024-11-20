@@ -2,7 +2,7 @@
  * @param groupId Identificador del grupo de texto en el SVG a modificar.
  * @param svgGroupText Mapa que asocia identificadores de clase con un valor.
  */
-type TextGroup = {groupId : String, svgTextsOfTextGroup : Map<string, string>}
+type TextGroup = {groupId : string, svgTextsOfTextGroup : Map<string, string>}
 
 export default class SvgTextManager {
     #svgDoc
@@ -37,7 +37,7 @@ export default class SvgTextManager {
      * @param textContent Contenido 
      * @param className Nombre de la clase del texto a modificar
      */
-    #updateSvgTextOfGroup(groupId : String, className : string, textContent : string) {
+    #updateSvgTextOfGroup(groupId : string, className : string, textContent : string) {
         const svgText = this.#svgDoc.querySelector(`#${groupId} > text.${className}.value`) as SVGElement
         if (!svgText) {
             throw new Error(`The text for group ${groupId} with class name: ${className} value was not found`)

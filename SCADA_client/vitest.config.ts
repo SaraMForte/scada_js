@@ -7,6 +7,10 @@ export default defineConfig({
         globals: true,
         environment: 'jsdom',
         include: ['src/**/*.{test,spec}.ts'],
-        exclude: ['dist']
+        exclude: ['dist'],
+        coverage: {
+            include: ['src/**/*.ts'],
+            exclude: ['src/main/webapp/index/scada-svg-item-keys.ts']
+        }
     }
 })

@@ -1,0 +1,6 @@
+dist/
+.vscode/
+node_modules/
+coverage/
+package-lock.json
+Arroyo_SCADA.code-workspace

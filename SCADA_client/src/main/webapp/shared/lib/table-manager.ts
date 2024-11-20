@@ -54,6 +54,6 @@ export default class TableManager {
     }
 
     refreshTable(dataBody: { [key: string]: unknown }[]) {
-        this.#tableDoc.innerHTML = this.#getTableBody(dataBody)
+        this.#tableDoc.innerHTML = this.#getTableThead() + this.#getTableBody(dataBody)
     }
 }

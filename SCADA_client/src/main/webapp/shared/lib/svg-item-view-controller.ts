@@ -10,6 +10,7 @@ type SvgItemViewControllerOptions = {
 }
 
 export default class SvgItemViewController implements Refreshable{
+    isRefreshLoopStopped: boolean
     #svgItemManager
     #dataUrl
     #svgItemsKeys
@@ -18,6 +19,11 @@ export default class SvgItemViewController implements Refreshable{
         this.#svgItemManager = new SvgItemManager(idSvg, colors)
         this.#dataUrl = dataUrl
         this.#svgItemsKeys = svgItemsKeys
+        this.isRefreshLoopStopped = false
+    }
+
+    stopRefreshLoop(): void {
+        this.isRefreshLoopStopped = true
     }
 
     /**
@@ -34,6 +40,7 @@ export default class SvgItemViewController implements Refreshable{
      * Función que establece el bucle de la función refresh
      */
     async refreshLoop(loopTime : number) {
+        this.isRefreshLoopStopped = false
         await refreshLoop(this , loopTime)
     }
 
