@@ -168,14 +168,13 @@ class RefreshItemsStatusContext {
     #changesItemFragmentColor(itemFrangmentId: string, choosedColor: string) {
         const svgItem = this.#svgDoc?.getElementById(itemFrangmentId)
         const svgGroupItems =
-        svgItem?.tagName === 'g' ? svgItem.querySelectorAll<SVGElement>('*') : [svgItem as SVGElement | null]
-        
+            svgItem?.tagName === 'g' ? svgItem.querySelectorAll<SVGElement>('*') : [svgItem as SVGElement | null]
+
         svgGroupItems.forEach(element => {
             if (element) {
                 element.style.fill = choosedColor
             }
         })
-
     }
 
     /**
